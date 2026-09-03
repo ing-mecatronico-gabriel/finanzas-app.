@@ -1,11 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
+const schemaSql = require('./schemaSql');
 
 let pgPool = null;
 let usePostgres = false;
+let schemaInitPromise = null;
 
-// Si existe DATABASE_URL, intentar inicializar conexión a PostgreSQL
+async function ensurePostgresSchema() {
+  if (!usePostgres || !pgPool) return;
+  if (!schemaInitPromise) {
+    schemaInitPromise = pgPool.query(schemaSql)
+      .then(() => {
+        console.log('✅ Esquema PostgreSQL inicializado/verificado con éxito.');
+      })
+      .catch(err => {
+        console.error('Error inicializando esquema PostgreSQL:', err.message);
+        schemaInitPromise = null;
+        throw err;
+      });
+  }
+  return schemaInitPromise;
+}
+
+// Si existe DATABASE_URL, inicializar conexión a PostgreSQL
 if (config.databaseUrl && config.databaseUrl.trim() !== '') {
   try {
     const { Pool } = require('pg');
@@ -22,18 +40,6 @@ if (config.databaseUrl && config.databaseUrl.trim() !== '') {
   }
 } else {
   console.log('📁 Modo de Base de Datos: Almacenamiento Local JSON/Transaccional activo (DATABASE_URL no configurado).');
-}
-
-const schemaSql = require('./schemaSql');
-
-async function ensurePostgresSchema() {
-  if (!usePostgres || !pgPool) return;
-  try {
-    await pgPool.query(schemaSql);
-    console.log('✅ Esquema PostgreSQL inicializado/verificado con éxito.');
-  } catch (err) {
-    console.warn('Advertencia inicializando esquema PostgreSQL:', err.message);
-  }
 }
 
 // Almacén local persistente para desarrollo y pruebas inmediatas
@@ -81,15 +87,16 @@ const db = {
 
   async query(sqlText, params = []) {
     if (usePostgres && pgPool) {
+      await ensurePostgresSchema();
       return await pgPool.query(sqlText, params);
     }
-    // Si se consulta en modo local, se delega según la operación
     return { rows: [] };
   },
 
   // Operaciones de Colección Genéricas (Compatibilidad Dual)
   async find(collectionName, filter = {}) {
     if (usePostgres && pgPool) {
+      await ensurePostgresSchema();
       const keys = Object.keys(filter).filter(k => filter[k] !== undefined);
       let query = `SELECT * FROM ${collectionName} WHERE 1=1`;
       const values = [];
@@ -143,6 +150,7 @@ const db = {
     };
 
     if (usePostgres && pgPool) {
+      await ensurePostgresSchema();
       const keys = Object.keys(record);
       const values = Object.values(record);
       const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
@@ -166,6 +174,7 @@ const db = {
     };
 
     if (usePostgres && pgPool) {
+      await ensurePostgresSchema();
       const keys = Object.keys(updatedFields);
       const values = Object.values(updatedFields);
       values.push(id);
@@ -180,30 +189,13 @@ const db = {
     const index = list.findIndex(item => item.id === id);
     if (index === -1) return null;
 
-    list[index] = {
-      ...list[index],
-      ...updatedFields
-    };
+    list[index] = { ...list[index], ...updatedFields };
     writeLocalDb(state);
     return list[index];
   },
 
-  async upsert(collectionName, item) {
-    const existing = await this.findOne(collectionName, { id: item.id, is_deleted: undefined });
-    if (existing) {
-      return await this.update(collectionName, item.id, item);
-    } else {
-      return await this.insert(collectionName, item);
-    }
-  },
-
   async softDelete(collectionName, id) {
     return await this.update(collectionName, id, { is_deleted: true });
-  },
-
-  // Restablecer para testing
-  resetLocalDb() {
-    writeLocalDb(defaultState);
   }
 };
 
