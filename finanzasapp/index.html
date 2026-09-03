@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FinanzasApp — Fintech Moderna</title>
+  
+  <!-- Tipografía Inter y Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Iconos Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Hojas de Estilo Modulares -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/dark-mode.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- ==========================================================
+         SIDEBAR ESCRITORIO (FIJO Y COLAPSABLE)
+         ========================================================== -->
+    <aside class="app-sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-badge">
+          <span>B</span>
+        </div>
+        <span class="logo-text">FinanzasApp</span>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="sidebar-item">
+          <button class="sidebar-btn active" data-view="overview">
+            <i class="fas fa-th-large"></i>
+            <span class="sidebar-label">Inicio</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="transactions">
+            <i class="fas fa-exchange-alt"></i>
+            <span class="sidebar-label">Movimientos</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="accounts">
+            <i class="fas fa-wallet"></i>
+            <span class="sidebar-label">Cuentas</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="budget">
+            <i class="fas fa-chart-pie"></i>
+            <span class="sidebar-label">Presupuesto</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="goals">
+            <i class="fas fa-bullseye"></i>
+            <span class="sidebar-label">Metas</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="reports">
+            <i class="fas fa-chart-line"></i>
+            <span class="sidebar-label">Reportes</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="ai">
+            <i class="fas fa-robot"></i>
+            <span class="sidebar-label">Finanzas AI</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="settings">
+            <i class="fas fa-cog"></i>
+            <span class="sidebar-label">Configuración</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-collapse-toggle" id="sidebar-toggle">
+          <i class="fas fa-arrow-left"></i>
+          <span class="sidebar-label">Contraer barra</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==========================================================
+         ÁREA PRINCIPAL DE CONTENIDO
+         ========================================================== -->
+    <main class="main-wrapper">
+      
+      <!-- HEADER SUPERIOR -->
+      <header class="main-header">
+        <div class="header-title-wrap">
+          <h2 class="header-page-title" id="header-title-text">Overview</h2>
+        </div>
+
+        <div class="header-actions">
+          <!-- Buscador -->
+          <div class="header-search-bar">
+            <i class="fas fa-search" style="color: var(--text-muted);"></i>
+            <input type="text" placeholder="Buscar movimientos..." onfocus="switchView('transactions')">
+          </div>
+
+          <!-- Píldora de Notificaciones -->
+          <button class="header-icon-btn" title="Notificaciones">
+            <i class="fas fa-bell"></i>
+          </button>
+
+          <!-- Selector de Modo Claro / Oscuro -->
+          <button class="header-icon-btn" data-action="toggle-theme" title="Cambiar Tema (Claro/Oscuro/Auto)">
+            <i class="fas fa-moon theme-icon-indicator"></i>
+          </button>
+
+          <!-- Perfil de Usuario -->
+          <div class="header-user-pill" onclick="switchView('settings')">
+            <div class="user-avatar" id="user-avatar-initials">GA</div>
+            <span class="user-name-text">Gabriel M.</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.65rem; color: var(--text-muted);"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==========================================================
+           VISTA 1: OVERVIEW / RESUMEN FINANCIERO (PRINCIPAL)
+           ========================================================== -->
+      <section id="view-overview" class="view-section active">
+        
+        <h3 class="greeting-title" id="greeting-text">Buenos días, <strong>Gabriel</strong></h3>
+
+        <!-- Fila Superior: Balance Total + Mis Cuentas Pastel -->
+        <div class="overview-top-row">
+          
+          <!-- TARJETA DE BALANCE PRINCIPAL -->
+          <div class="portfolio-card">
+            <div>
+              <div class="portfolio-card-head">
+                <span class="portfolio-label">Balance Total</span>
+                <span class="portfolio-badge-gain">+12,4% este mes</span>
+              </div>
+              <div class="portfolio-amount" id="portfolio-total-balance">$ 18.450.000</div>
+              <div class="portfolio-sub">Patrimonio neto disponible</div>
+            </div>
+
+            <!-- Gráfica SVG de evolución -->
+            <div class="portfolio-chart-wrap" id="portfolio-chart-container">
+              <!-- SVG inyectado por dashboard.js -->
+            </div>
+
+            <!-- Selector de Períodos -->
+            <div class="portfolio-period-tabs">
+              <button class="period-pill" data-period="1D">1D</button>
+              <button class="period-pill" data-period="1S">1S</button>
+              <button class="period-pill active" data-period="1M">1M</button>
+              <button class="period-pill" data-period="6M">6M</button>
+              <button class="period-pill" data-period="1A">1A</button>
+              <button class="period-pill" data-period="TODO">TODO</button>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: MIS CUENTAS (TARJETAS PASTEL HORIZONTALES) -->
+          <div class="assets-section-card">
+            <div class="section-subhead">
+              <h3>Mis cuentas</h3>
+              <span class="link-see-all" onclick="switchView('accounts')">Ver todas &rarr;</span>
+            </div>
+            
+            <div class="accounts-pastel-grid" id="accounts-pastel-grid">
+              <!-- Renderizado dinámico desde dashboard.js -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Fila Inferior: Movimientos Recientes + Finanzas AI -->
+        <div class="overview-bottom-row">
+          
+          <!-- MOVIMIENTOS RECIENTES -->
+          <div class="activity-card">
+            <div class="section-subhead">
+              <h3>Movimientos recientes</h3>
+              <span class="link-see-all" onclick="switchView('transactions')">Ver todos &rarr;</span>
+            </div>
+
+            <ul class="movements-list" id="overview-movements-list">
+              <!-- Renderizado dinámico desde dashboard.js -->
+            </ul>
+          </div>
+
+          <!-- TARJETA FINANZAS AI ASISTENTE -->
+          <div class="ai-assistant-card">
+            <div class="ai-card-top">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #60A5FA; font-weight: 700; font-size: 0.85rem;">
+                <i class="fas fa-robot"></i> Finanzas AI
+              </div>
+              <h4>Haz crecer tus finanzas con IA</h4>
+              <p id="ai-banner-headline">Analiza tus gastos, detecta oportunidades de ahorro y toma mejores decisiones financieras.</p>
+            </div>
+
+            <button class="btn-ai-action" data-action="open-ai-analysis">
+              <span>Analizar mis gastos</span>
+              <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ==========================================================
+           VISTA 2: MOVIMIENTOS COMPLETOS Y FILTROS
+           ========================================================== -->
+      <section id="view-transactions" class="view-section">
+        <div class="activity-card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <!-- Buscador interno -->
+            <div class="header-search-bar" style="display: flex; width: 280px;">
+              <i class="fas fa-search" style="color: var(--text-muted);"></i>
+              <input type="text" id="tx-search-input" placeholder="Buscar por concepto o categoría...">
+            </div>
+
+            <!-- Filtros de Tipo -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="period-pill tx-filter-pill active" data-filter="todos">Todos</button>
+              <button class="period-pill tx-filter-pill" data-filter="ingreso">Ingresos</button>
+              <button class="period-pill tx-filter-pill" data-filter="gasto">Gastos</button>
+              <button class="period-pill tx-filter-pill" data-filter="transferencia">Transferencias</button>
+            </div>
+
+            <!-- Botón "+ Añadir" -->
+            <button class="btn-primary-action" data-action="open-add-modal">
+              <i class="fas fa-plus"></i>
+              <span>Añadir Movimiento</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="activity-card">
+          <div id="full-movements-container">
+            <!-- Inyectado por transactions.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 3: ADMINISTRACIÓN DE CUENTAS
+           ========================================================== -->
+      <section id="view-accounts" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700;">Tus Cuentas y Billeteras</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Administra tus cuentas bancarias, billeteras digitales y efectivo físico</p>
+          </div>
+          <button class="btn-primary-action" onclick="openModal('modal-add-account')">
+            <i class="fas fa-plus"></i> Nueva Cuenta
+          </button>
+        </div>
+
+        <div class="accounts-pastel-grid" id="accounts-view-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px;">
+          <!-- Inyectado por accounts.js -->
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 4: PRESUPUESTOS POR CATEGORÍA
+           ========================================================== -->
+      <section id="view-budget" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700;">Presupuesto Mensual</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Controla tus límites de gasto para evitar excesos</p>
+          </div>
+          <button class="btn-primary-action" onclick="openModal('modal-add-budget')">
+            <i class="fas fa-plus"></i> Nuevo Presupuesto
+          </button>
+        </div>
+
+        <div id="budgets-list-container">
+          <!-- Inyectado por budget.js -->
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 5: METAS DE AHORRO
+           ========================================================== -->
+      <section id="view-goals" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700;">Metas de Ahorro</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Construye tus proyectos paso a paso con aportes programados</p>
+          </div>
+          <button class="btn-primary-action" onclick="openModal('modal-add-goal')">
+            <i class="fas fa-plus"></i> Nueva Meta
+          </button>
+        </div>
+
+        <div id="goals-list-container">
+          <!-- Inyectado por goals.js -->
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 6: REPORTES FINANCIEROS
+           ========================================================== -->
+      <section id="view-reports" class="view-section">
+        <!-- Tarjetas KPIs Resumen -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="activity-card" style="padding: 18px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--income-color);">INGRESOS</span>
+            <div id="report-total-income" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
+          </div>
+          <div class="activity-card" style="padding: 18px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--expense-color);">GASTOS</span>
+            <div id="report-total-expense" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
+          </div>
+          <div class="activity-card" style="padding: 18px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--brand-blue);">AHORRO NETO</span>
+            <div id="report-net-savings" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
+          </div>
+          <div class="activity-card" style="padding: 18px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: #8B5CF6;">TASA DE AHORRO</span>
+            <div id="report-savings-rate" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">0%</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Distribución por Categoría -->
+          <div class="activity-card">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Gastos por Categoría</h4>
+            <div id="report-categories-container"></div>
+          </div>
+
+          <!-- Comparación Mensual de Ingresos y Gastos -->
+          <div class="activity-card">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Evolución Mensual</h4>
+            <div id="report-monthly-bars-container"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 7: ASISTENTE FINANZAS AI
+           ========================================================== -->
+      <section id="view-ai" class="view-section">
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-robot" style="color: var(--brand-blue);"></i>
+            <span>Asistente Financiero Inteligente</span>
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Diagnósticos automáticos, recomendaciones de optimización y consultas financieras</p>
+        </div>
+
+        <!-- Tarjetas de Diagnóstico -->
+        <div id="ai-insights-cards"></div>
+
+        <!-- Chat / Consultas Interactivas -->
+        <div class="activity-card" style="margin-top: 24px;">
+          <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 14px;">Pregúntale a Finanzas AI</h4>
+          <div id="ai-conversation-output" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px; padding: 10px 0;">
+            <!-- Mensaje de bienvenida -->
+            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+              <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 18px 18px 18px 4px; font-size: 0.88rem; max-width: 85%;">
+                <div style="display: flex; align-items: center; gap: 6px; color: var(--brand-blue); font-size: 0.75rem; font-weight: 700; margin-bottom: 4px;">
+                  <i class="fas fa-robot"></i> Finanzas AI
+                </div>
+                ¡Hola, Gabriel! He analizado tus ingresos y gastos de este mes. Puedes preguntarme sobre tus balances, cuánto has gastado en comida, o pedirme consejos para ahorrar.
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="ai-query-input" class="form-control" placeholder="Ej: ¿Cuánto he gastado este mes? o ¿Cómo va mi meta de universidad?" style="border-radius: var(--radius-pill);">
+            <button id="btn-ai-send-query" class="btn-primary-action" style="padding: 10px 20px;">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VISTA 8: CONFIGURACIÓN Y PERFIL
+           ========================================================== -->
+      <section id="view-settings" class="view-section">
+        <div class="activity-card" style="max-width: 600px; margin-bottom: 20px;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Perfil de Usuario</h4>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem;">GA</div>
+            <div>
+              <h3 style="font-size: 1.2rem; font-weight: 800;">Gabriel M.</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Usuario Administrador</span>
+            </div>
+          </div>
+          <div style="border-top: 1px solid var(--border-light); padding-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span>Tema de la aplicación:</span>
+              <button class="btn-secondary" data-action="toggle-theme" style="width: auto; padding: 6px 14px;">
+                <i class="fas fa-moon theme-icon-indicator"></i>
+                <span class="theme-label-indicator">Modo Oscuro</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==========================================================
+         BARRA DE NAVEGACIÓN FIJA INFERIOR (CELULAR / APK)
+         ========================================================== -->
+    <nav class="bottom-nav-bar">
+      <button class="nav-item-btn active" data-view="overview">
+        <i class="fas fa-home"></i>
+        <span>Inicio</span>
+      </button>
+      <button class="nav-item-btn" data-view="transactions">
+        <i class="fas fa-exchange-alt"></i>
+        <span>Movimientos</span>
+      </button>
+      <button class="nav-item-btn add-btn" data-action="open-add-modal" title="Añadir Movimiento">
+        <i class="fas fa-plus"></i>
+      </button>
+      <button class="nav-item-btn" data-view="reports">
+        <i class="fas fa-chart-line"></i>
+        <span>Reportes</span>
+      </button>
+      <button class="nav-item-btn" data-view="settings">
+        <i class="fas fa-user"></i>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ==========================================================
+       MODAL: + AÑADIR MOVIMIENTO
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-add-movement">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Registrar Movimiento</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-movement')">&times;</button>
+      </div>
+
+      <!-- Segmentos: Gasto / Ingreso / Transferencia -->
+      <div class="type-segmented-control">
+        <button type="button" class="segment-btn active" data-type="gasto">Gasto</button>
+        <button type="button" class="segment-btn" data-type="ingreso">Ingreso</button>
+        <button type="button" class="segment-btn" data-type="transferencia">Transferencia</button>
+      </div>
+
+      <form id="form-add-movement">
+        <div class="form-group">
+          <label>Monto ($)</label>
+          <input type="number" id="modal-tx-amount" class="form-control" placeholder="0" step="any" required style="font-size: 1.3rem; font-weight: 800;">
+        </div>
+
+        <div class="form-group">
+          <label id="modal-lbl-source-account">Cuenta</label>
+          <select id="modal-tx-account" class="form-control" required></select>
+        </div>
+
+        <div class="form-group" id="modal-group-to-account" style="display: none;">
+          <label>Cuenta Destino</label>
+          <select id="modal-tx-to-account" class="form-control"></select>
+        </div>
+
+        <div class="form-group" id="modal-group-category">
+          <label>Categoría</label>
+          <select id="modal-tx-category" class="form-control"></select>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción / Concepto</label>
+          <input type="text" id="modal-tx-desc" class="form-control" placeholder="Ej: Almuerzo, Mercado, Salario">
+        </div>
+
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="modal-tx-date" class="form-control">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-movement')">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: + NUEVA CUENTA
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-add-account">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Crear Nueva Cuenta</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-account')">&times;</button>
+      </div>
+      <form id="form-add-account">
+        <div class="form-group">
+          <label>Nombre de la Cuenta</label>
+          <input type="text" id="acc-new-name" class="form-control" placeholder="Ej: Bancolombia, Nequi, Caja Chica" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Cuenta</label>
+          <select id="acc-new-type" class="form-control">
+            <option value="banco">Banco / Cuenta Corriente</option>
+            <option value="ahorros">Cuenta de Ahorros</option>
+            <option value="efectivo">Efectivo en Mano</option>
+            <option value="billetera">Billetera Digital (Nequi/Daviplata)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Saldo Inicial ($)</label>
+          <input type="number" id="acc-new-balance" class="form-control" placeholder="0" step="any">
+        </div>
+        <div class="form-group">
+          <label>Estilo Visual Pastel</label>
+          <select id="acc-new-style" class="form-control">
+            <option value="principal">Lila Pastel (Principal)</option>
+            <option value="ahorros">Menta Pastel (Ahorros)</option>
+            <option value="efectivo">Dorado Pastel (Efectivo)</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-account')">Cancelar</button>
+          <button type="submit" class="btn-submit">Crear Cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: TRANSFERIR ENTRE CUENTAS
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-transfer-direct">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Transferir Dinero</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-transfer-direct')">&times;</button>
+      </div>
+      <form id="form-transfer-modal">
+        <div class="form-group">
+          <label>Cuenta de Origen</label>
+          <select id="transfer-source-acc" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Cuenta de Destino</label>
+          <select id="transfer-dest-acc" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Monto a Transferir ($)</label>
+          <input type="number" id="transfer-amount" class="form-control" placeholder="0" step="any" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-transfer-direct')">Cancelar</button>
+          <button type="submit" class="btn-submit">Realizar Transferencia</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: + NUEVO PRESUPUESTO
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-add-budget">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Nuevo Presupuesto Mensual</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-budget')">&times;</button>
+      </div>
+      <form id="form-add-budget">
+        <div class="form-group">
+          <label>Categoría</label>
+          <input type="text" id="budget-new-category" class="form-control" placeholder="Ej: Alimentación, Salidas, Transporte" required>
+        </div>
+        <div class="form-group">
+          <label>Límite Mensual ($)</label>
+          <input type="number" id="budget-new-limit" class="form-control" placeholder="Ej: 500000" step="any" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-budget')">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar Presupuesto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: + NUEVA META DE AHORRO
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-add-goal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Nueva Meta de Ahorro</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-goal')">&times;</button>
+      </div>
+      <form id="form-add-goal">
+        <div class="form-group">
+          <label>Título de la Meta</label>
+          <input type="text" id="goal-new-title" class="form-control" placeholder="Ej: Vacaciones, Computador, Universidad" required>
+        </div>
+        <div class="form-group">
+          <label>Monto Objetivo ($)</label>
+          <input type="number" id="goal-new-target" class="form-control" placeholder="Ej: 5000000" step="any" required>
+        </div>
+        <div class="form-group">
+          <label>Ahorro Inicial Acumulado ($)</label>
+          <input type="number" id="goal-new-initial" class="form-control" placeholder="0" step="any">
+        </div>
+        <div class="form-group">
+          <label>Color Distintivo</label>
+          <select id="goal-new-color" class="form-control">
+            <option value="#8B5CF6">Púrpura</option>
+            <option value="#3B82F6">Azul Eléctrico</option>
+            <option value="#10B981">Verde Menta</option>
+            <option value="#F59E0B">Dorado / Ámbar</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-goal')">Cancelar</button>
+          <button type="submit" class="btn-submit">Crear Meta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts Modulares -->
+  <script src="js/theme.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/transactions.js"></script>
+  <script src="js/accounts.js"></script>
+  <script src="js/budget.js"></script>
+  <script src="js/goals.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

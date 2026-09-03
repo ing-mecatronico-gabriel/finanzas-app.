@@ -17,6 +17,9 @@ app.use('/mobile', express.static(path.join(__dirname, '..', 'mobile')));
 // Servir Estáticos de la Aplicación Laptop / Desktop
 app.use('/desktop', express.static(path.join(__dirname, '..', 'desktop')));
 
+// Servir Nueva Interfaz Fintech Moderna (Responsive Escritorio + Móvil)
+app.use('/finanzasapp', express.static(path.join(__dirname, '..', 'finanzasapp')));
+
 // Rutas de API REST
 app.use('/api', apiRoutes);
 
@@ -73,19 +76,26 @@ app.get('/', (req, res) => {
         <h1>Gestión Financiera Personal</h1>
         <p class="subtitle">Base de datos centralizada en la nube, sincronización bidireccional continua y experiencias nativas independientes.</p>
         
-        <div class="grid">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+          <a href="/finanzasapp" class="card" style="border: 2px solid #2563eb; background: #162036;">
+            <div class="icon">✨</div>
+            <h2 style="color: #60a5fa;">Fintech Premium</h2>
+            <p>Nueva interfaz fintech moderna, tarjetas pastel, modo claro/oscuro y adaptable a Computador y Celular.</p>
+            <span class="btn" style="background: #2563eb;">Abrir Nueva Interfaz</span>
+          </a>
+
           <a href="/mobile" class="card">
             <div class="icon">📱</div>
             <h2>Aplicación Celular</h2>
-            <p>PWA móvil táctil para registrar gastos e ingresos en segundos, soporte offline y barra inferior táctil.</p>
+            <p>PWA táctil para registrar gastos e ingresos en segundos, soporte offline y barra inferior táctil.</p>
             <span class="btn" style="background: #10b981;">Abrir Móvil</span>
           </a>
 
           <a href="/desktop" class="card">
             <div class="icon">💻</div>
             <h2>Aplicación Laptop</h2>
-            <p>Dashboard analítico para computador con gráficos Chart.js, tablas avanzadas, control de deudas y presupuestos.</p>
-            <span class="btn" style="background: #2563eb;">Abrir Laptop</span>
+            <p>Dashboard para computador con gráficos Chart.js, tablas avanzadas y control de deudas.</p>
+            <span class="btn" style="background: #475569;">Abrir Clásico</span>
           </a>
         </div>
 

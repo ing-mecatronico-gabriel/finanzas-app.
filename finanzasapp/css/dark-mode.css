@@ -1,0 +1,102 @@
+/* ==========================================================================
+   FINANZASAPP — MODO OSCURO FINTECH PREMIUM
+   Paleta oscura de alto contraste, tonos azules/carbón profundos y pasteles oscurecidos
+   ========================================================================== */
+
+[data-theme="dark"] {
+  /* Fondo general y contenedores */
+  --bg-app: #0B0F17;
+  --bg-canvas: #121824;
+  --bg-card: #161D2C;
+  --bg-card-subtle: #1C2436;
+  --bg-input: #101522;
+  --border-color: #222C3E;
+  --border-light: #1A2232;
+
+  /* Sidebar Oscuro */
+  --sidebar-bg: #090D15;
+  --sidebar-border: #161E2E;
+  --sidebar-text: #8B98AD;
+  --sidebar-text-hover: #FFFFFF;
+  --sidebar-active-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-text: #FFFFFF;
+
+  /* Tipografía */
+  --text-main: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+
+  /* Colores Pastel Oscurecidos para Cuentas / Activos */
+  --pastel-blue-bg: #14233A;
+  --pastel-blue-border: #1E3456;
+  --pastel-blue-text: #60A5FA;
+
+  --pastel-purple-bg: #251D38;
+  --pastel-purple-border: #3B2E58;
+  --pastel-purple-text: #C084FC;
+
+  --pastel-green-bg: #132B20;
+  --pastel-green-border: #1E4633;
+  --pastel-green-text: #34D399;
+
+  --pastel-yellow-bg: #2B2313;
+  --pastel-yellow-border: #47391D;
+  --pastel-yellow-text: #FBBF24;
+
+  /* Estados Financieros */
+  --income-color: #34D399;
+  --income-bg: rgba(52, 211, 153, 0.15);
+  --expense-color: #F87171;
+  --expense-bg: rgba(248, 113, 113, 0.15);
+  --brand-blue: #3B82F6;
+  --brand-blue-hover: #2563EB;
+
+  /* Tarjeta Finanzas AI */
+  --ai-card-bg: #0E121B;
+  --ai-card-text: #F8FAFC;
+  --ai-card-sub: #94A3B8;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Ajustes visuales específicos para Modo Oscuro */
+[data-theme="dark"] .logo-badge {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .portfolio-badge-gain {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93C5FD;
+}
+
+[data-theme="dark"] .period-pill.active {
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+[data-theme="dark"] .acc-icon-square {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .movement-icon-box.gasto {
+  background: #1C2436;
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+[data-theme="dark"] .bottom-nav-bar {
+  background: #0F1420;
+  border-top-color: #1E2536;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5);
+}
