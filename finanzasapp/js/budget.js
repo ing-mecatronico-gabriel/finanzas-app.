@@ -42,7 +42,7 @@ const BudgetModule = {
 
     container.innerHTML = AppState.budgets.map(b => {
       const limit = parseFloat(b.limit_amount) || 1;
-      const spent = spentByCategory[b.category] || (b.category === 'Alimentación' ? 420000 : (b.category === 'Transporte' ? 180000 : 150000));
+      const spent = spentByCategory[b.category] || 0;
       const pct = Math.min(100, Math.round((spent / limit) * 100));
 
       let progressColor = '#3B82F6';

@@ -83,6 +83,12 @@
           </button>
         </li>
         <li class="sidebar-item">
+          <button class="sidebar-btn" data-view="credits">
+            <i class="fas fa-credit-card"></i>
+            <span class="sidebar-label">Crédito</span>
+          </button>
+        </li>
+        <li class="sidebar-item">
           <button class="sidebar-btn" data-view="budget">
             <i class="fas fa-chart-pie"></i>
             <span class="sidebar-label">Presupuesto</span>
@@ -294,6 +300,42 @@
       </section>
 
       <!-- ==========================================================
+           VISTA: CRÉDITO, TARJETAS Y PRÉSTAMOS
+           ========================================================== -->
+      <section id="view-credits" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 800;">Crédito, Tarjetas y Préstamos</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Control de cupos, saldos utilizados, días de corte, fechas límite y abonos</p>
+          </div>
+          <button class="btn-primary-action btn-interactive" onclick="openModal('modal-add-credit')">
+            <i class="fas fa-plus"></i> Nuevo Crédito
+          </button>
+        </div>
+
+        <!-- KPIs de Crédito y Deuda -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="activity-card tilt-card" style="padding: 18px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--brand-blue); text-transform: uppercase;">Cupo Total Otorgado</span>
+            <div id="credit-kpi-total-limit" style="font-size: 1.4rem; font-weight: 800; margin-top: 4px; color: var(--text-main);">$ 0</div>
+          </div>
+          <div class="activity-card tilt-card" style="padding: 18px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--expense-color); text-transform: uppercase;">Deuda Total / Utilizado</span>
+            <div id="credit-kpi-total-used" style="font-size: 1.4rem; font-weight: 800; margin-top: 4px; color: var(--expense-color);">$ 0</div>
+          </div>
+          <div class="activity-card tilt-card" style="padding: 18px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--income-color); text-transform: uppercase;">Crédito Total Disponible</span>
+            <div id="credit-kpi-total-available" style="font-size: 1.4rem; font-weight: 800; margin-top: 4px; color: var(--income-color);">$ 0</div>
+          </div>
+        </div>
+
+        <!-- Contenedor de Tarjetas de Crédito -->
+        <div id="credits-cards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Inyectado por credits.js -->
+        </div>
+      </section>
+
+      <!-- ==========================================================
            VISTA 4: PRESUPUESTOS POR CATEGORÍA
            ========================================================== -->
       <section id="view-budget" class="view-section">
@@ -438,15 +480,18 @@
           <button class="speed-dial-item" onclick="openQuickAction('transferencia')">
             <i class="fas fa-exchange-alt" style="color: #3B82F6;"></i> Transferir
           </button>
+          <button class="speed-dial-item" onclick="openModal('modal-pay-credit')">
+            <i class="fas fa-credit-card" style="color: #8B5CF6;"></i> Pagar Tarjeta
+          </button>
         </div>
         <button class="nav-item-btn add-btn btn-interactive" id="mobile-fab-btn" title="Añadir Movimiento">
           <i class="fas fa-plus"></i>
         </button>
       </div>
 
-      <button class="nav-item-btn" data-view="reports">
-        <i class="fas fa-chart-line"></i>
-        <span>Reportes</span>
+      <button class="nav-item-btn" data-view="credits">
+        <i class="fas fa-credit-card"></i>
+        <span>Crédito</span>
       </button>
       <button class="nav-item-btn" data-view="settings">
         <i class="fas fa-user"></i>
@@ -764,12 +809,159 @@
     </div>
   </div>
 
+  <!-- ==========================================================
+       MODAL: + NUEVO CRÉDITO / TARJETA
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-add-credit">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Registrar Nuevo Crédito</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-credit')">&times;</button>
+      </div>
+      <form id="form-add-credit">
+        <div class="form-group">
+          <label>Nombre del Crédito o Tarjeta</label>
+          <input type="text" id="credit-new-name" class="form-control" placeholder="Ej: Visa Bancolombia, Cupo Nequi, Crédito Vehicular" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Crédito</label>
+          <select id="credit-new-type" class="form-control">
+            <option value="tarjeta">Tarjeta de Crédito</option>
+            <option value="prestamo">Préstamo / Crédito de Consumo</option>
+            <option value="cupo">Línea / Cupo Rotativo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cupo Total Aprobado ($)</label>
+          <input type="number" id="credit-new-limit" class="form-control" placeholder="Ej: 5000000" step="any" required>
+        </div>
+        <div class="form-group">
+          <label>Dinero Inicialmente Tomado / Deuda Actual ($)</label>
+          <input type="number" id="credit-new-initial-used" class="form-control" placeholder="0" value="0" step="any">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Día de Corte (1-31)</label>
+            <input type="number" id="credit-new-cutoff" class="form-control" placeholder="15" min="1" max="31" value="15" required>
+          </div>
+          <div class="form-group">
+            <label>Día Límite de Pago (1-31)</label>
+            <input type="number" id="credit-new-payment" class="form-control" placeholder="30" min="1" max="31" value="30" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tasa de Interés Estimada (% Mes)</label>
+          <input type="number" id="credit-new-interest" class="form-control" placeholder="2.1" step="0.01" value="0">
+        </div>
+        <div class="form-group">
+          <label>Color Distintivo</label>
+          <select id="credit-new-color" class="form-control">
+            <option value="#8B5CF6">Púrpura Elegante</option>
+            <option value="#3B82F6">Azul Marino</option>
+            <option value="#10B981">Esmeralda</option>
+            <option value="#F59E0B">Dorado / Gold</option>
+            <option value="#EC4899">Rosa Magenta</option>
+            <option value="#475569">Titanio / Grafito</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-add-credit')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Crear Crédito</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: ABONAR / PAGAR CRÉDITO
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-pay-credit">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Abonar a Crédito / Tarjeta</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-pay-credit')">&times;</button>
+      </div>
+      <form id="form-pay-credit">
+        <div class="form-group">
+          <label>Crédito / Tarjeta a Abonar</label>
+          <select id="pay-target-credit" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Pagar desde Cuenta</label>
+          <select id="pay-source-account" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Monto del Abono ($)</label>
+          <input type="number" id="pay-amount" class="form-control" placeholder="Ej: 250000" step="any" required style="font-size: 1.3rem; font-weight: 800;">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-pay-credit')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive" style="background: #10B981;">Confirmar Abono</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: CONSUMO CON CRÉDITO A CUOTAS
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-spend-credit">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Registrar Consumo con Crédito</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-spend-credit')">&times;</button>
+      </div>
+      <form id="form-spend-credit">
+        <div class="form-group">
+          <label>Tarjeta o Crédito</label>
+          <select id="spend-target-credit" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Monto de la Compra ($)</label>
+          <input type="number" id="spend-amount" class="form-control" placeholder="Ej: 180000" step="any" required style="font-size: 1.3rem; font-weight: 800;">
+        </div>
+        <div class="form-group">
+          <label>Concepto / Comercio</label>
+          <input type="text" id="spend-desc" class="form-control" placeholder="Ej: Pasajes aéreos, Supermercado, Ropa" required>
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="spend-category" class="form-control">
+            <option value="Compras">Compras</option>
+            <option value="Viajes">Viajes</option>
+            <option value="Tecnología">Tecnología</option>
+            <option value="Alimentación">Alimentación</option>
+            <option value="Salud">Salud</option>
+            <option value="Varios">Varios</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Número de Cuotas</label>
+          <select id="spend-installments" class="form-control">
+            <option value="1">1 Cuota</option>
+            <option value="2">2 Cuotas</option>
+            <option value="3">3 Cuotas</option>
+            <option value="6">6 Cuotas</option>
+            <option value="12">12 Cuotas</option>
+            <option value="24">24 Cuotas</option>
+            <option value="36">36 Cuotas</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-spend-credit')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Cargar a Crédito</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Scripts Modulares -->
   <script src="js/theme.js"></script>
   <script src="js/motion.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/transactions.js"></script>
   <script src="js/accounts.js"></script>
+  <script src="js/credits.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/goals.js"></script>
   <script src="js/reports.js"></script>

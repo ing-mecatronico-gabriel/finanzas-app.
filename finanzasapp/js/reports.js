@@ -1,6 +1,6 @@
 /**
- * FINANZASAPP — MÓDULO DE REPORTES Y ANALÍTICA FINANCIERA
- * Gastos por categoría, comparación de ingresos vs egresos y tasa de ahorro
+ * FINANZASAPP — MÓDULO DE REPORTES Y ANALÍTICA FINANCIERA (100% REAL EN $0)
+ * Gastos por categoría, comparación real de ingresos vs egresos y tasa de ahorro
  */
 
 const ReportsModule = {
@@ -33,10 +33,10 @@ const ReportsModule = {
     const repNet = document.getElementById('report-net-savings');
     const repRate = document.getElementById('report-savings-rate');
 
-    if (repIncome) repIncome.textContent = formatCurrency(income > 0 ? income : 3200000);
-    if (repExpense) repExpense.textContent = formatCurrency(expense > 0 ? expense : 642000);
-    if (repNet) repNet.textContent = formatCurrency(net !== 0 ? net : 2558000);
-    if (repRate) repRate.textContent = `${savingRate > 0 ? savingRate : 79}%`;
+    if (repIncome) repIncome.textContent = formatCurrency(income);
+    if (repExpense) repExpense.textContent = formatCurrency(expense);
+    if (repNet) repNet.textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
+    if (repRate) repRate.textContent = `${savingRate}%`;
   },
 
   renderCategoryBreakdown() {
@@ -54,13 +54,14 @@ const ReportsModule = {
       totalExpense += amt;
     });
 
-    // Datos por defecto si no hay gastos
     if (totalExpense === 0) {
-      catTotals['Alimentación'] = 420000;
-      catTotals['Transporte'] = 180000;
-      catTotals['Entretenimiento'] = 150000;
-      catTotals['Servicios'] = 120000;
-      totalExpense = 870000;
+      container.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <i class="fas fa-chart-pie" style="font-size: 2.2rem; margin-bottom: 10px; opacity: 0.4; display: block;"></i>
+          No hay gastos registrados todavía para analizar.
+        </div>
+      `;
+      return;
     }
 
     const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
@@ -91,27 +92,52 @@ const ReportsModule = {
     const container = document.getElementById('report-monthly-bars-container');
     if (!container) return;
 
-    // Comparativa de los últimos 4 meses
-    const months = [
-      { name: 'Mayo', inc: 2800000, exp: 950000 },
-      { name: 'Junio', inc: 3100000, exp: 820000 },
-      { name: 'Julio', inc: 2950000, exp: 1100000 },
-      { name: 'Agosto', inc: 3200000, exp: 642000 }
-    ];
+    // Agrupar movimientos reales por mes
+    const monthMap = {};
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-    const maxVal = Math.max(...months.map(m => Math.max(m.inc, m.exp)));
+    AppState.transactions.forEach(t => {
+      if (t.is_deleted || !t.date) return;
+      const d = new Date(t.date);
+      if (isNaN(d.getTime())) return;
+
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = `${monthNames[d.getMonth()]}`;
+
+      if (!monthMap[key]) {
+        monthMap[key] = { name: label, inc: 0, exp: 0 };
+      }
+
+      const amt = parseFloat(t.amount) || 0;
+      if (t.type === 'ingreso') monthMap[key].inc += amt;
+      if (t.type === 'gasto' || t.type === 'egreso') monthMap[key].exp += amt;
+    });
+
+    const months = Object.values(monthMap);
+
+    if (months.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <i class="fas fa-chart-bar" style="font-size: 2.2rem; margin-bottom: 10px; opacity: 0.4; display: block;"></i>
+          Sin datos de evolución mensual aún. Registra movimientos para ver tu gráfica.
+        </div>
+      `;
+      return;
+    }
+
+    const maxVal = Math.max(1, ...months.map(m => Math.max(m.inc, m.exp)));
 
     container.innerHTML = `
       <div style="display: flex; justify-content: space-around; align-items: flex-end; height: 160px; padding-top: 20px;">
-        ${months.map(m => {
-          const incHeight = Math.round((m.inc / maxVal) * 120);
-          const expHeight = Math.round((m.exp / maxVal) * 120);
+        ${months.slice(-6).map(m => {
+          const incHeight = Math.max(4, Math.round((m.inc / maxVal) * 120));
+          const expHeight = Math.max(4, Math.round((m.exp / maxVal) * 120));
 
           return `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
               <div style="display: flex; gap: 6px; align-items: flex-end; height: 120px;">
-                <div style="width: 16px; height: ${incHeight}px; background: #10B981; border-radius: 4px;" title="Ingreso: ${formatCurrency(m.inc)}"></div>
-                <div style="width: 16px; height: ${expHeight}px; background: #EF4444; border-radius: 4px;" title="Gasto: ${formatCurrency(m.exp)}"></div>
+                <div style="width: 16px; height: ${m.inc > 0 ? incHeight : 4}px; background: #10B981; border-radius: 4px;" title="Ingreso: ${formatCurrency(m.inc)}"></div>
+                <div style="width: 16px; height: ${m.exp > 0 ? expHeight : 4}px; background: #EF4444; border-radius: 4px;" title="Gasto: ${formatCurrency(m.exp)}"></div>
               </div>
               <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${m.name}</span>
             </div>

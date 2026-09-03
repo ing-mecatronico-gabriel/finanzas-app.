@@ -36,6 +36,7 @@ const AppState = {
   transactions: JSON.parse(localStorage.getItem('finanzas_transactions') || '[]'),
   budgets: JSON.parse(localStorage.getItem('finanzas_budgets') || '[]'),
   goals: JSON.parse(localStorage.getItem('finanzas_goals') || '[]'),
+  credits: JSON.parse(localStorage.getItem('finanzas_credits') || '[]'),
 
   currentView: 'overview',
   activePeriod: '1M',
@@ -74,6 +75,7 @@ function switchView(viewName) {
     overview: 'Overview',
     transactions: 'Movimientos',
     accounts: 'Mis Cuentas',
+    credits: 'Crédito y Tarjetas',
     budget: 'Presupuestos',
     goals: 'Metas de Ahorro',
     reports: 'Reportes Financieros',
@@ -89,6 +91,7 @@ function switchView(viewName) {
   if (viewName === 'overview' && window.DashboardModule) window.DashboardModule.render();
   if (viewName === 'transactions' && window.TransactionsModule) window.TransactionsModule.render();
   if (viewName === 'accounts' && window.AccountsModule) window.AccountsModule.render();
+  if (viewName === 'credits' && window.CreditsModule) window.CreditsModule.render();
   if (viewName === 'budget' && window.BudgetModule) window.BudgetModule.render();
   if (viewName === 'goals' && window.GoalsModule) window.GoalsModule.render();
   if (viewName === 'reports' && window.ReportsModule) window.ReportsModule.render();
@@ -194,6 +197,9 @@ function handleLogout() {
   localStorage.removeItem('finanzas_user');
   localStorage.removeItem('finanzas_accounts');
   localStorage.removeItem('finanzas_transactions');
+  localStorage.removeItem('finanzas_credits');
+  localStorage.removeItem('finanzas_budgets');
+  localStorage.removeItem('finanzas_goals');
 
   // Restaurar estado inicial limpio en $0
   AppState.accounts = [
@@ -202,6 +208,9 @@ function handleLogout() {
     { id: 'acc-3', name: 'Billetera Digital', type: 'billetera', balance: 0, icon: 'mobile-screen', change: '0%', styleClass: 'ahorros' }
   ];
   AppState.transactions = [];
+  AppState.credits = [];
+  AppState.budgets = [];
+  AppState.goals = [];
 
   updateUserInterface();
   openModal('modal-auth');
@@ -508,10 +517,22 @@ async function fetchCloudData() {
       }
     }
 
+    // 4. Tarjetas y Líneas de Crédito
+    const credRes = await fetch(`${API_BASE}/cards`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    });
+    if (credRes.ok) {
+      const credData = await credRes.json();
+      if (credData.cards) {
+        AppState.credits = credData.cards.filter(c => !c.is_deleted);
+      }
+    }
+
     saveLocalState();
     if (window.DashboardModule) window.DashboardModule.render();
     if (window.TransactionsModule) window.TransactionsModule.render();
     if (window.AccountsModule) window.AccountsModule.render();
+    if (window.CreditsModule) window.CreditsModule.render();
     if (window.BudgetModule) window.BudgetModule.render();
   } catch (err) {
     console.warn('Error descargando datos:', err.message);
@@ -563,6 +584,7 @@ function saveLocalState() {
   localStorage.setItem('finanzas_transactions', JSON.stringify(AppState.transactions));
   localStorage.setItem('finanzas_budgets', JSON.stringify(AppState.budgets));
   localStorage.setItem('finanzas_goals', JSON.stringify(AppState.goals));
+  localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits || []));
 }
 
 // ==========================================================
@@ -607,6 +629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.DashboardModule) window.DashboardModule.init();
   if (window.TransactionsModule) window.TransactionsModule.init();
   if (window.AccountsModule) window.AccountsModule.init();
+  if (window.CreditsModule) window.CreditsModule.init();
   if (window.BudgetModule) window.BudgetModule.init();
   if (window.GoalsModule) window.GoalsModule.init();
   if (window.ReportsModule) window.ReportsModule.init();

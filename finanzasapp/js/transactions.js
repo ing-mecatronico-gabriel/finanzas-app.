@@ -94,13 +94,25 @@ const TransactionsModule = {
     const srcSel = document.getElementById('modal-tx-account');
     const dstSel = document.getElementById('modal-tx-to-account');
 
-    const options = AppState.accounts
+    let accOptions = '<optgroup label="🏦 Cuentas y Bolsillos">';
+    accOptions += AppState.accounts
       .filter(a => !a.is_deleted)
       .map(a => `<option value="${a.id}">${a.name} (${formatCurrency(a.balance)})</option>`)
       .join('');
+    accOptions += '</optgroup>';
 
-    if (srcSel) srcSel.innerHTML = options;
-    if (dstSel) dstSel.innerHTML = options;
+    const activeCredits = (AppState.credits || []).filter(c => !c.is_deleted);
+    if (activeCredits.length > 0) {
+      accOptions += '<optgroup label="💳 Tarjetas y Líneas de Crédito">';
+      accOptions += activeCredits.map(c => {
+        const available = Math.max(0, (c.credit_limit || 0) - (c.used_amount || 0));
+        return `<option value="cred_${c.id}">[Crédito] ${c.name} (Disp: ${formatCurrency(available)} | Deuda: ${formatCurrency(c.used_amount)})</option>`;
+      }).join('');
+      accOptions += '</optgroup>';
+    }
+
+    if (srcSel) srcSel.innerHTML = accOptions;
+    if (dstSel) dstSel.innerHTML = accOptions;
   },
 
   render() {
@@ -146,8 +158,16 @@ const TransactionsModule = {
       const badgeClass = isIngreso ? 'ingreso' : (isTransfer ? 'transferencia' : 'gasto');
       const badgeText = isIngreso ? 'Ingreso' : (isTransfer ? 'Transferencia' : 'Gasto');
       const icon = t.icon || (isIngreso ? 'arrow-up-right-dots' : (isTransfer ? 'exchange-alt' : 'shopping-bag'));
-      const acc = AppState.accounts.find(a => a.id === t.account_id);
-      const accName = acc ? acc.name : 'Cuenta';
+      
+      let accName = 'Cuenta';
+      if (t.account_id && t.account_id.startsWith('cred_')) {
+        const cId = t.account_id.replace('cred_', '');
+        const cred = (AppState.credits || []).find(c => c.id === cId);
+        accName = cred ? `[Crédito] ${cred.name}` : 'Crédito';
+      } else {
+        const acc = AppState.accounts.find(a => a.id === t.account_id);
+        if (acc) accName = acc.name;
+      }
       const staggerClass = `stagger-${Math.min((idx % 6) + 1, 6)}`;
 
       return `
@@ -197,6 +217,11 @@ const TransactionsModule = {
       return;
     }
 
+    const isCreditSource = account_id.startsWith('cred_');
+    const cleanCreditId = isCreditSource ? account_id.replace('cred_', '') : null;
+    const isCreditDest = to_account_id && to_account_id.startsWith('cred_');
+    const cleanDestCreditId = isCreditDest ? to_account_id.replace('cred_', '') : null;
+
     const newTx = {
       id: uuidv4(),
       amount,
@@ -206,16 +231,40 @@ const TransactionsModule = {
       category: type === 'transferencia' ? 'Transferencia' : category,
       description: description || (type === 'transferencia' ? 'Transferencia interna' : category),
       date,
-      icon: type === 'ingreso' ? 'arrow-up-right-dots' : (type === 'transferencia' ? 'exchange-alt' : 'shopping-bag')
+      icon: isCreditSource ? 'credit-card' : (type === 'ingreso' ? 'arrow-up-right-dots' : (type === 'transferencia' ? 'exchange-alt' : 'shopping-bag'))
     };
 
-    // Actualizar saldos en las cuentas correspondientes
-    const srcAcc = AppState.accounts.find(a => a.id === account_id);
-    if (srcAcc) {
-      if (type === 'gasto') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - amount;
-      if (type === 'ingreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + amount;
-      if (type === 'transferencia') {
-        srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - amount;
+    // Actualizar saldos o cupos de crédito correspondientes
+    if (isCreditSource) {
+      const credit = (AppState.credits || []).find(c => c.id === cleanCreditId);
+      if (credit) {
+        if (type === 'gasto' || type === 'egreso') {
+          credit.used_amount = (parseFloat(credit.used_amount) || 0) + amount;
+        } else if (type === 'ingreso') {
+          credit.used_amount = Math.max(0, (parseFloat(credit.used_amount) || 0) - amount);
+        }
+        localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits));
+      }
+    } else {
+      const srcAcc = AppState.accounts.find(a => a.id === account_id);
+      if (srcAcc) {
+        if (type === 'gasto') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - amount;
+        if (type === 'ingreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + amount;
+        if (type === 'transferencia') {
+          srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - amount;
+        }
+      }
+    }
+
+    // Si es transferencia y el destino es crédito (Abono al crédito)
+    if (type === 'transferencia') {
+      if (isCreditDest) {
+        const destCredit = (AppState.credits || []).find(c => c.id === cleanDestCreditId);
+        if (destCredit) {
+          destCredit.used_amount = Math.max(0, (parseFloat(destCredit.used_amount) || 0) - amount);
+          localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits));
+        }
+      } else {
         const dstAcc = AppState.accounts.find(a => a.id === to_account_id);
         if (dstAcc) dstAcc.balance = (parseFloat(dstAcc.balance) || 0) + amount;
       }
@@ -270,12 +319,39 @@ const TransactionsModule = {
     if (idx === -1) return;
 
     const tx = AppState.transactions[idx];
-    const srcAcc = AppState.accounts.find(a => a.id === tx.account_id);
-    if (srcAcc) {
-      if (tx.type === 'gasto' || tx.type === 'egreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + parseFloat(tx.amount);
-      if (tx.type === 'ingreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - parseFloat(tx.amount);
-      if (tx.type === 'transferencia') {
-        srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + parseFloat(tx.amount);
+    const isCredit = tx.account_id && tx.account_id.startsWith('cred_');
+
+    if (isCredit) {
+      const cId = tx.account_id.replace('cred_', '');
+      const cred = (AppState.credits || []).find(c => c.id === cId);
+      if (cred) {
+        if (tx.type === 'gasto' || tx.type === 'egreso') {
+          cred.used_amount = Math.max(0, (parseFloat(cred.used_amount) || 0) - parseFloat(tx.amount));
+        } else if (tx.type === 'ingreso') {
+          cred.used_amount = (parseFloat(cred.used_amount) || 0) + parseFloat(tx.amount);
+        }
+        localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits));
+      }
+    } else {
+      const srcAcc = AppState.accounts.find(a => a.id === tx.account_id);
+      if (srcAcc) {
+        if (tx.type === 'gasto' || tx.type === 'egreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + parseFloat(tx.amount);
+        if (tx.type === 'ingreso') srcAcc.balance = (parseFloat(srcAcc.balance) || 0) - parseFloat(tx.amount);
+        if (tx.type === 'transferencia') {
+          srcAcc.balance = (parseFloat(srcAcc.balance) || 0) + parseFloat(tx.amount);
+        }
+      }
+    }
+
+    if (tx.type === 'transferencia' && tx.to_account_id) {
+      if (tx.to_account_id.startsWith('cred_')) {
+        const cId = tx.to_account_id.replace('cred_', '');
+        const cred = (AppState.credits || []).find(c => c.id === cId);
+        if (cred) {
+          cred.used_amount = (parseFloat(cred.used_amount) || 0) + parseFloat(tx.amount);
+          localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits));
+        }
+      } else {
         const dstAcc = AppState.accounts.find(a => a.id === tx.to_account_id);
         if (dstAcc) dstAcc.balance = (parseFloat(dstAcc.balance) || 0) - parseFloat(tx.amount);
       }
@@ -291,6 +367,7 @@ const TransactionsModule = {
     this.render();
     if (window.DashboardModule) window.DashboardModule.render();
     if (window.AccountsModule) window.AccountsModule.render();
+    if (window.CreditsModule) window.CreditsModule.render();
   }
 };
 
