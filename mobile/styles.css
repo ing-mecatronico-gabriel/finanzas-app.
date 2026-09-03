@@ -178,6 +178,69 @@ body {
 .app-view {
   display: none;
 }
+
+/* ==========================================================
+   BARRA DE PERÍODOS Y FILTROS MÓVIL
+   ========================================================== */
+.mobile-period-bar {
+  margin-bottom: 16px;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mobile-period-tabs {
+  display: flex;
+  gap: 4px;
+  background: #0f172a;
+  padding: 4px;
+  border-radius: 8px;
+}
+.m-period-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.m-period-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+.mobile-period-subcontrols {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mobile-period-subcontrols select {
+  flex: 1;
+  min-width: 100px;
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  outline: none;
+}
+.m-period-tag {
+  font-size: 0.72rem;
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
 .app-view.active {
   display: block;
   animation: fadeIn 0.2s ease;

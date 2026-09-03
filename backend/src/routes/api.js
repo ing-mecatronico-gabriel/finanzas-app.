@@ -32,6 +32,7 @@ router.delete('/accounts/:id', accountController.delete);
 // 3. Transacciones (Ingresos, Egresos, Transferencias)
 router.get('/transactions', transactionController.getAll);
 router.post('/transactions', transactionController.create);
+router.post('/transactions/batch', transactionController.createBatch);
 router.delete('/transactions/:id', transactionController.delete);
 
 // 4. Tarjetas de Crédito

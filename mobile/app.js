@@ -35,7 +35,15 @@ const AppState = {
   isOnline: navigator.onLine,
   isSyncing: false,
   currentTxType: 'egreso',
-  activeTab: 'home'
+  activeTab: 'home',
+  period: {
+    mode: 'total',
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    fortnight: 1,
+    week: 1,
+    accountId: 'todas'
+  }
 };
 
 // Formateador de moneda en pesos colombianos ($ 500.000)
@@ -56,6 +64,7 @@ if ('serviceWorker' in navigator) {
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  initMobilePeriod();
   checkAuthAndInit();
 });
 
@@ -354,6 +363,8 @@ function renderAllViews() {
 
 // Render del saldo disponible total y desglose
 function renderBalanceCard() {
+  const filteredTxs = getMobileFilteredTransactions();
+
   let total = 0;
   let cash = 0;
   let banks = 0;
@@ -361,11 +372,13 @@ function renderBalanceCard() {
   AppState.accounts.forEach(acc => {
     if (acc.is_deleted) return;
     const b = parseFloat(acc.balance) || 0;
-    total += b;
-    if (acc.type && acc.type.toLowerCase() === 'efectivo') {
-      cash += b;
-    } else {
-      banks += b;
+    if (AppState.period.accountId === 'todas' || AppState.period.accountId === acc.id) {
+      total += b;
+      if (acc.type && acc.type.toLowerCase() === 'efectivo') {
+        cash += b;
+      } else {
+        banks += b;
+      }
     }
   });
 
@@ -373,20 +386,18 @@ function renderBalanceCard() {
   document.getElementById('cash-balance').textContent = formatCurrency(cash);
   document.getElementById('banks-balance').textContent = formatCurrency(banks);
 
-  // Estadísticas del mes actual
-  const currentMonth = new Date().toISOString().substring(0, 7);
-  let monthInc = 0;
-  let monthExp = 0;
+  // Estadísticas del período seleccionado
+  let periodInc = 0;
+  let periodExp = 0;
 
-  AppState.transactions.forEach(t => {
-    if (t.is_deleted || (t.date && !t.date.startsWith(currentMonth))) return;
+  filteredTxs.forEach(t => {
     const amt = parseFloat(t.amount) || 0;
-    if (t.type === 'ingreso') monthInc += amt;
-    if (t.type === 'egreso') monthExp += amt;
+    if (t.type === 'ingreso') periodInc += amt;
+    if (t.type === 'egreso') periodExp += amt;
   });
 
-  document.getElementById('monthly-income-stat').textContent = '+' + formatCurrency(monthInc);
-  document.getElementById('monthly-expense-stat').textContent = '-' + formatCurrency(monthExp);
+  document.getElementById('monthly-income-stat').textContent = '+' + formatCurrency(periodInc);
+  document.getElementById('monthly-expense-stat').textContent = '-' + formatCurrency(periodExp);
 }
 
 // Render de cuentas en scroll horizontal
@@ -417,15 +428,14 @@ function renderRecentTransactions(typeFilter = 'todos') {
   const homeContainer = document.getElementById('recent-transactions-container');
   const allContainer = document.getElementById('all-transactions-container');
 
-  const sortedTx = [...AppState.transactions]
-    .filter(t => !t.is_deleted)
+  const filteredTx = getMobileFilteredTransactions()
     .sort((a, b) => new Date(`${b.date}T${b.time || '00:00'}`) - new Date(`${a.date}T${a.time || '00:00'}`));
 
   // Home: solo los 5 más recientes
   if (homeContainer) {
-    const recent = sortedTx.slice(0, 5);
+    const recent = filteredTx.slice(0, 5);
     if (recent.length === 0) {
-      homeContainer.innerHTML = `<div class="empty-state" style="padding: 16px; color: #94a3b8; text-align: center;">No hay transacciones registradas</div>`;
+      homeContainer.innerHTML = `<div class="empty-state" style="padding: 16px; color: #94a3b8; text-align: center;">No hay transacciones en este período</div>`;
     } else {
       homeContainer.innerHTML = recent.map(renderTransactionCardHtml).join('');
     }
@@ -433,7 +443,7 @@ function renderRecentTransactions(typeFilter = 'todos') {
 
   // Vista Movimientos completa con filtro
   if (allContainer) {
-    const filtered = typeFilter === 'todos' ? sortedTx : sortedTx.filter(t => t.type === typeFilter);
+    const filtered = typeFilter === 'todos' ? filteredTx : filteredTx.filter(t => t.type === typeFilter);
     if (filtered.length === 0) {
       allContainer.innerHTML = `<div class="empty-state" style="padding: 20px; color: #94a3b8; text-align: center;">No hay movimientos para este filtro</div>`;
     } else {
@@ -581,6 +591,17 @@ function populateAccountSelects() {
   if (accSelect) accSelect.innerHTML = options;
   if (toAccSelect) toAccSelect.innerHTML = options;
   if (payAccSelect) payAccSelect.innerHTML = options;
+
+  const mSelectAcc = document.getElementById('m-select-account');
+  if (mSelectAcc) {
+    mSelectAcc.innerHTML = `<option value="todas">Todas las Cuentas</option>` + options;
+    mSelectAcc.value = AppState.period.accountId;
+  }
+
+  const mExcelTarget = document.getElementById('m-excel-target-account');
+  if (mExcelTarget) {
+    mExcelTarget.innerHTML = options;
+  }
 
   populateCategorySelect();
 }
@@ -891,3 +912,297 @@ async function openAdminMobileModal() {
     container.innerHTML = `<div style="text-align: center; color: #f87171; padding: 12px;">Error: ${err.message}</div>`;
   }
 }
+
+// ==========================================================
+// CONTROL DE PERÍODOS TEMPORALES MÓVIL
+// ==========================================================
+function initMobilePeriod() {
+  const selYear = document.getElementById('m-select-year');
+  if (selYear) {
+    const currentYear = new Date().getFullYear();
+    let opts = '';
+    for (let y = currentYear + 1; y >= currentYear - 5; y--) {
+      opts += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+    }
+    selYear.innerHTML = opts;
+    selYear.value = AppState.period.year;
+  }
+
+  const selMonth = document.getElementById('m-select-month');
+  if (selMonth) {
+    selMonth.value = AppState.period.month;
+  }
+
+  setMobilePeriod('total');
+}
+
+function setMobilePeriod(mode) {
+  AppState.period.mode = mode;
+  document.querySelectorAll('.m-period-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-period') === mode);
+  });
+
+  const selMonth = document.getElementById('m-select-month');
+  const selFortnight = document.getElementById('m-select-fortnight');
+  const selYear = document.getElementById('m-select-year');
+
+  if (selYear) selYear.style.display = (mode !== 'total') ? 'block' : 'none';
+  if (selMonth) selMonth.style.display = (mode === 'mensual' || mode === 'quincenal') ? 'block' : 'none';
+  if (selFortnight) selFortnight.style.display = (mode === 'quincenal') ? 'block' : 'none';
+
+  onMobilePeriodChange();
+}
+
+function onMobilePeriodChange() {
+  const selMonth = document.getElementById('m-select-month');
+  const selFortnight = document.getElementById('m-select-fortnight');
+  const selYear = document.getElementById('m-select-year');
+  const selAccount = document.getElementById('m-select-account');
+
+  if (selMonth) AppState.period.month = parseInt(selMonth.value, 10);
+  if (selFortnight) AppState.period.fortnight = parseInt(selFortnight.value, 10);
+  if (selYear) AppState.period.year = parseInt(selYear.value, 10);
+  if (selAccount) AppState.period.accountId = selAccount.value;
+
+  const mode = AppState.period.mode;
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const mName = monthNames[AppState.period.month] || '';
+  const accName = AppState.period.accountId === 'todas'
+    ? 'Todas las Cuentas'
+    : (AppState.accounts.find(a => a.id === AppState.period.accountId)?.name || 'Cuenta');
+
+  let lbl = '';
+  if (mode === 'total') lbl = `Todo el Histórico • ${accName}`;
+  else if (mode === 'anual') lbl = `Año ${AppState.period.year} • ${accName}`;
+  else if (mode === 'mensual') lbl = `Mes: ${mName} ${AppState.period.year} • ${accName}`;
+  else if (mode === 'quincenal') lbl = `${AppState.period.fortnight}ª Qna ${mName} • ${accName}`;
+  else if (mode === 'semanal') lbl = `Semana actual • ${accName}`;
+
+  const textEl = document.getElementById('m-period-text');
+  if (textEl) textEl.textContent = lbl;
+
+  renderBalanceCard();
+  renderRecentTransactions();
+}
+
+function getMobileFilteredTransactions() {
+  const { mode, year, month, fortnight, accountId } = AppState.period;
+  let list = AppState.transactions.filter(t => !t.is_deleted);
+
+  if (accountId && accountId !== 'todas') {
+    list = list.filter(t => t.account_id === accountId || t.to_account_id === accountId);
+  }
+
+  if (mode === 'total') return list;
+
+  const yStr = String(year);
+  const mStr = String(month + 1).padStart(2, '0');
+
+  if (mode === 'anual') {
+    return list.filter(t => t.date && t.date.startsWith(yStr));
+  }
+
+  if (mode === 'mensual') {
+    const ymPrefix = `${yStr}-${mStr}`;
+    return list.filter(t => t.date && t.date.startsWith(ymPrefix));
+  }
+
+  if (mode === 'quincenal') {
+    const ymPrefix = `${yStr}-${mStr}`;
+    return list.filter(t => {
+      if (!t.date || !t.date.startsWith(ymPrefix)) return false;
+      const day = parseInt(t.date.substring(8, 10), 10) || 1;
+      return fortnight === 1 ? day <= 15 : day >= 16;
+    });
+  }
+
+  if (mode === 'semanal') {
+    const now = new Date();
+    const currentDay = now.getDay() || 7;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - currentDay + 1);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const monStr = monday.toISOString().split('T')[0];
+    const sunStr = sunday.toISOString().split('T')[0];
+    return list.filter(t => t.date && t.date >= monStr && t.date <= sunStr);
+  }
+
+  return list;
+}
+
+// ==========================================================
+// IMPORTACIÓN EXCEL MÓVIL
+// ==========================================================
+let mobileExcelRows = [];
+
+function handleMobileExcelSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      if (typeof XLSX === 'undefined') {
+        alert('Cargando librería Excel...');
+        return;
+      }
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+
+      if (!json || json.length < 2) {
+        alert('El archivo no contiene filas válidas');
+        return;
+      }
+
+      parseMobileExcel(json);
+    } catch (err) {
+      alert('Error leyendo Excel: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseMobileExcel(rows) {
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+  let colDate = headers.findIndex(h => h.includes('fech') || h.includes('date') || h.includes('dia'));
+  let colDesc = headers.findIndex(h => h.includes('desc') || h.includes('detall') || h.includes('concep') || h.includes('nomb'));
+  let colAmount = headers.findIndex(h => h.includes('monto') || h.includes('valor') || h.includes('import') || h.includes('amount') || h.includes('total'));
+  let colType = headers.findIndex(h => h.includes('tipo') || h.includes('type'));
+  let colCat = headers.findIndex(h => h.includes('categ') || h.includes('rubro'));
+
+  if (colAmount === -1) {
+    for (let c = 0; c < (rows[1] || []).length; c++) {
+      const clean = String(rows[1][c] || '').replace(/[^0-9.-]/g, '');
+      if (!isNaN(parseFloat(clean)) && parseFloat(clean) !== 0) {
+        colAmount = c;
+        break;
+      }
+    }
+  }
+
+  mobileExcelRows = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length === 0) continue;
+
+    const rawAmt = colAmount !== -1 ? row[colAmount] : 0;
+    let amount = parseFloat(String(rawAmt || '').replace(/[^0-9.-]/g, '')) || 0;
+    if (amount === 0) continue;
+
+    let type = 'egreso';
+    if (colType !== -1 && row[colType]) {
+      const tStr = String(row[colType]).toLowerCase();
+      if (tStr.includes('ing') || tStr.includes('inc') || tStr.includes('+')) type = 'ingreso';
+    } else {
+      if (amount > 0) type = 'ingreso';
+      if (amount < 0) {
+        type = 'egreso';
+        amount = Math.abs(amount);
+      }
+    }
+
+    let dateStr = new Date().toISOString().split('T')[0];
+    if (colDate !== -1 && row[colDate]) {
+      const dVal = String(row[colDate]).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(dVal)) dateStr = dVal.substring(0, 10);
+    }
+
+    const desc = colDesc !== -1 && row[colDesc] ? String(row[colDesc]).trim() : 'Movimiento Excel';
+    const cat = colCat !== -1 && row[colCat] ? String(row[colCat]).trim() : (type === 'ingreso' ? 'Otros Ingresos' : 'Varios');
+
+    mobileExcelRows.push({
+      date: dateStr,
+      type,
+      amount: Math.abs(amount),
+      description: desc,
+      category: cat
+    });
+  }
+
+  renderMobileExcelPreview();
+}
+
+function renderMobileExcelPreview() {
+  const optionsDiv = document.getElementById('m-excel-options');
+  const btnConfirm = document.getElementById('btn-m-confirm-excel');
+  const statsDiv = document.getElementById('m-excel-stats');
+  const listDiv = document.getElementById('m-excel-preview-list');
+  const accSel = document.getElementById('m-excel-target-account');
+
+  if (optionsDiv) optionsDiv.style.display = 'block';
+  if (btnConfirm) btnConfirm.style.display = 'block';
+
+  const activeAccs = AppState.accounts.filter(a => !a.is_deleted);
+  if (accSel) {
+    accSel.innerHTML = activeAccs.map(a => `<option value="${a.id}">${a.name} (${formatCurrency(a.balance)})</option>`).join('');
+  }
+
+  let incCount = 0;
+  let expCount = 0;
+  mobileExcelRows.forEach(r => r.type === 'ingreso' ? incCount++ : expCount++);
+
+  if (statsDiv) {
+    statsDiv.innerHTML = `Detectados <strong>${mobileExcelRows.length} movimientos</strong>: <span style="color:#34d399;">+${incCount} ingresos</span>, <span style="color:#f87171;">-${expCount} egresos</span>`;
+  }
+
+  const btnCount = document.getElementById('m-excel-btn-count');
+  if (btnCount) btnCount.textContent = mobileExcelRows.length;
+
+  if (listDiv) {
+    listDiv.innerHTML = mobileExcelRows.slice(0, 30).map(r => `
+      <div style="background: #1e293b; padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem;">
+        <div>
+          <strong>${r.description}</strong><br>
+          <span style="color: #94a3b8;">${r.date} • ${r.category}</span>
+        </div>
+        <span style="font-weight: 700; color: ${r.type === 'ingreso' ? '#34d399' : '#f87171'};">
+          ${r.type === 'ingreso' ? '+' : '-'} ${formatCurrency(r.amount)}
+        </span>
+      </div>
+    `).join('');
+  }
+}
+
+async function submitMobileExcelImport() {
+  if (mobileExcelRows.length === 0) return alert('No hay movimientos para importar');
+  const targetAcc = document.getElementById('m-excel-target-account')?.value;
+  if (!targetAcc) return alert('Selecciona una cuenta');
+
+  const btn = document.getElementById('btn-m-confirm-excel');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Importando...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/transactions/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AppState.token}`
+      },
+      body: JSON.stringify({
+        transactions: mobileExcelRows,
+        defaultAccountId: targetAcc
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Fallo');
+
+    alert(`🎉 Importados ${data.count} movimientos`);
+    closeModal('modal-import-excel-mobile');
+    await syncWithCloud(false);
+  } catch (err) {
+    alert('Error importando: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `Confirmar e Importar (<span id="m-excel-btn-count">${mobileExcelRows.length}</span>)`;
+    }
+  }
+}
+

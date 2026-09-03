@@ -207,3 +207,81 @@ exports.delete = async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al eliminar transacción' });
   }
 };
+
+exports.createBatch = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { transactions, defaultAccountId } = req.body;
+
+    if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({ success: false, error: 'Lista de transacciones inválida o vacía' });
+    }
+
+    const userAccounts = await db.find('accounts', { user_id: userId, is_deleted: false });
+    if (userAccounts.length === 0) {
+      return res.status(400).json({ success: false, error: 'Debes tener al menos una cuenta para importar' });
+    }
+
+    const defaultAcc = userAccounts.find(a => a.id === defaultAccountId) || userAccounts[0];
+    const inserted = [];
+    const accountBalanceAdjustments = {};
+
+    for (const item of transactions) {
+      const amount = Math.abs(parseFloat(item.amount) || 0);
+      if (amount <= 0) continue;
+
+      const type = item.type === 'ingreso' ? 'ingreso' : 'egreso';
+      const targetAccountId = item.account_id && userAccounts.some(a => a.id === item.account_id)
+        ? item.account_id
+        : defaultAcc.id;
+
+      const txId = generateUuid();
+      const newTx = await db.insert('transactions', {
+        id: txId,
+        user_id: userId,
+        account_id: targetAccountId,
+        type,
+        amount,
+        category: item.category || (type === 'ingreso' ? 'Otros Ingresos' : 'Varios'),
+        description: item.description || 'Importado de Excel',
+        date: item.date || new Date().toISOString().split('T')[0],
+        time: item.time || '12:00:00',
+        payment_method: item.payment_method || 'Excel/CSV',
+        device_id: item.device_id || 'excel-import',
+        sync_status: 'synced',
+        is_deleted: false
+      });
+
+      inserted.push(newTx);
+
+      if (!accountBalanceAdjustments[targetAccountId]) {
+        accountBalanceAdjustments[targetAccountId] = 0;
+      }
+      if (type === 'ingreso') {
+        accountBalanceAdjustments[targetAccountId] += amount;
+      } else {
+        accountBalanceAdjustments[targetAccountId] -= amount;
+      }
+    }
+
+    for (const accId of Object.keys(accountBalanceAdjustments)) {
+      const acc = userAccounts.find(a => a.id === accId);
+      if (acc) {
+        const currentBal = parseFloat(acc.balance) || 0;
+        const newBal = currentBal + accountBalanceAdjustments[accId];
+        await db.update('accounts', accId, { balance: newBal });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Se importaron ${inserted.length} transacciones exitosamente`,
+      count: inserted.length,
+      transactions: inserted
+    });
+  } catch (err) {
+    console.error('Error en importación batch:', err);
+    res.status(500).json({ success: false, error: 'Error al procesar la importación en lote', details: err.message });
+  }
+};
+

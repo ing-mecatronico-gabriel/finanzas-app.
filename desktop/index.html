@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js para gráficos financieros reales -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS para importación y lectura de archivos Excel (.xlsx, .csv) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="layout-container">
@@ -89,6 +91,9 @@
         </div>
 
         <div class="header-actions">
+          <button class="btn-action" onclick="openModal('modal-import-excel')" style="background: #059669;" title="Importar finanzas desde archivo Excel o CSV">
+            <i class="fas fa-file-excel"></i> Importar Excel
+          </button>
           <button class="btn-action" onclick="openModal('modal-tutorial')" style="background: #8b5cf6;" title="Guía y tutorial de funcionamiento">
             <i class="fas fa-graduation-cap"></i> Tutorial
           </button>
@@ -103,6 +108,67 @@
           </button>
         </div>
       </header>
+
+      <!-- BARRA DE CONTROL TEMPORAL GRANULAR (SEMANAL, QUINCENAL, MENSUAL, ANUAL, TOTAL) -->
+      <div class="period-control-bar" id="period-control-bar">
+        <div class="period-modes-tabs">
+          <button type="button" class="period-tab active" data-period="total" onclick="setPeriodMode('total')">🌐 Total</button>
+          <button type="button" class="period-tab" data-period="anual" onclick="setPeriodMode('anual')">📅 Anual</button>
+          <button type="button" class="period-tab" data-period="mensual" onclick="setPeriodMode('mensual')">🗓️ Mensual</button>
+          <button type="button" class="period-tab" data-period="quincenal" onclick="setPeriodMode('quincenal')">🌓 Quincenal</button>
+          <button type="button" class="period-tab" data-period="semanal" onclick="setPeriodMode('semanal')">📆 Semanal</button>
+        </div>
+
+        <div class="period-selectors-group">
+          <!-- Selector de Año -->
+          <div class="filter-item-mini" id="group-filter-year" style="display: none;">
+            <label>Año:</label>
+            <select id="filter-select-year" onchange="onPeriodFilterChange()"></select>
+          </div>
+
+          <!-- Selector de Mes (Enero a Diciembre) -->
+          <div class="filter-item-mini" id="group-filter-month" style="display: none;">
+            <label>Mes:</label>
+            <select id="filter-select-month" onchange="onPeriodFilterChange()">
+              <option value="0">Enero</option>
+              <option value="1">Febrero</option>
+              <option value="2">Marzo</option>
+              <option value="3">Abril</option>
+              <option value="4">Mayo</option>
+              <option value="5">Junio</option>
+              <option value="6">Julio</option>
+              <option value="7">Agosto</option>
+              <option value="8">Septiembre</option>
+              <option value="9">Octubre</option>
+              <option value="10">Noviembre</option>
+              <option value="11">Diciembre</option>
+            </select>
+          </div>
+
+          <!-- Selector de Quincena -->
+          <div class="filter-item-mini" id="group-filter-fortnight" style="display: none;">
+            <label>Quincena:</label>
+            <select id="filter-select-fortnight" onchange="onPeriodFilterChange()">
+              <option value="1">1ª Quincena (Días 1 - 15)</option>
+              <option value="2">2ª Quincena (Días 16 - Fin)</option>
+            </select>
+          </div>
+
+          <!-- Selector de Cuenta Específica -->
+          <div class="filter-item-mini" id="group-filter-account">
+            <label>Cuenta:</label>
+            <select id="filter-select-account" onchange="onPeriodFilterChange()">
+              <option value="todas">🏦 Todas las Cuentas</option>
+            </select>
+          </div>
+
+          <!-- Indicador descriptivo del período actual -->
+          <div class="period-badge-info" id="period-badge-info">
+            <i class="fas fa-calendar-check" style="color: #60a5fa;"></i>
+            <span id="period-display-text">Todo el Histórico</span>
+          </div>
+        </div>
+      </div>
 
       <!-- CONTENEDOR DE VISTAS INTERCAMBIABLES -->
       <div class="content-scroll">
@@ -828,6 +894,73 @@
           <button type="submit" class="btn-primary">Guardar Nueva Contraseña</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL IMPORTACIÓN INTELIGENTE DE EXCEL / CSV -->
+  <div class="modal-backdrop" id="modal-import-excel" style="display: none;">
+    <div class="modal-dialog" style="max-width: 780px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-dialog-head">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-file-excel" style="color: #10b981; font-size: 1.6rem;"></i>
+          <div>
+            <h3 style="margin: 0;">Migrar Finanzas desde Excel o CSV</h3>
+            <p style="margin: 0; color: #94a3b8; font-size: 0.82rem;">Carga tu hoja de cálculo y el sistema detectará automáticamente tus movimientos</p>
+          </div>
+        </div>
+        <button class="btn-close" onclick="closeModal('modal-import-excel')">&times;</button>
+      </div>
+
+      <div style="overflow-y: auto; padding: 10px 0; flex: 1;">
+        <!-- Zona de Carga de Archivo -->
+        <div id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()" style="border: 2px dashed #3b82f6; background: rgba(59, 130, 246, 0.06); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+          <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #60a5fa; margin-bottom: 8px;"></i>
+          <h4 style="margin: 0 0 6px 0;">Arrastra tu archivo Excel aquí o haz clic para seleccionarlo</h4>
+          <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;">Formatos compatibles: <strong>.xlsx, .xls, .csv</strong></p>
+          <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileSelected(event)">
+        </div>
+
+        <!-- Opciones de Mapeo y Cuenta Destino -->
+        <div id="excel-mapping-options" style="display: none; margin-top: 16px; background: #1e293b; padding: 16px; border-radius: 10px; border: 1px solid #334155;">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px;">
+              <label style="font-size: 0.85rem; color: #cbd5e1; display: block; margin-bottom: 6px;">Asignar a la Cuenta:</label>
+              <select id="excel-target-account" style="width: 100%; padding: 8px; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: #fff;"></select>
+            </div>
+            <div style="flex: 1; min-width: 220px;" id="excel-detected-stats"></div>
+          </div>
+        </div>
+
+        <!-- Tabla de Previsualización -->
+        <div id="excel-preview-container" style="display: none; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 0.9rem; color: #e2e8f0;">Previsualización de Movimientos Detectados:</strong>
+            <span id="excel-row-count-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">0 filas</span>
+          </div>
+          <div style="max-height: 280px; overflow-y: auto; border: 1px solid #334155; border-radius: 8px;">
+            <table class="data-table" style="font-size: 0.82rem; width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;"><input type="checkbox" id="excel-select-all" checked onchange="toggleExcelSelectAll(this.checked)"></th>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-dialog-footer" style="margin-top: 10px;">
+        <button type="button" class="btn-cancel" onclick="closeModal('modal-import-excel')">Cancelar</button>
+        <button type="button" class="btn-primary" id="btn-confirm-excel-import" style="display: none;" onclick="submitExcelImport()">
+          <i class="fas fa-check-double"></i> Confirmar e Importar (<span id="excel-btn-count">0</span>)
+        </button>
+      </div>
     </div>
   </div>
 

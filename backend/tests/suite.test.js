@@ -328,8 +328,26 @@ async function runTests() {
     console.log('   📊 Total dinero disponible real:', formatCurrency(metrics.totalAvailable));
     console.log('   STATUS: 🟢 PRUEBA 8 SUPERADA EXITOSAMENTE\n');
 
+    // ==========================================================
+    // PRUEBA 9: Importación masiva desde Excel / CSV (createBatch)
+    // ==========================================================
+    console.log('🔹 PRUEBA 9: Importación de movimientos en lote desde Excel / CSV.');
+    const batchData = [
+      { date: '2026-04-05', type: 'ingreso', amount: 1500000, description: 'Salario Abril', category: 'Salario' },
+      { date: '2026-04-10', type: 'egreso', amount: 350000, description: 'Mercado Quincenal', category: 'Alimentación' },
+      { date: '2026-04-15', type: 'egreso', amount: 120000, description: 'Servicios Públicos', category: 'Servicios' }
+    ];
+    const batchRes = await apiRequest('POST', '/transactions/batch', {
+      transactions: batchData,
+      defaultAccountId: accountBanco.id
+    });
+    assert.strictEqual(batchRes.status, 201);
+    assert.strictEqual(batchRes.data.count, 3);
+    console.log(`   📊 Se importaron ${batchRes.data.count} transacciones exitosamente.`);
+    console.log('   STATUS: 🟢 PRUEBA 9 SUPERADA EXITOSAMENTE\n');
+
     console.log('======================================================');
-    console.log('🎉 TODAS LAS 8 PRUEBAS OBLIGATORIAS PASARON CON ÉXITO');
+    console.log('🎉 TODAS LAS PRUEBAS OBLIGATORIAS PASARON CON ÉXITO');
     console.log('======================================================\n');
   } catch (error) {
     console.error('❌ ERROR EN PRUEBAS:', error);

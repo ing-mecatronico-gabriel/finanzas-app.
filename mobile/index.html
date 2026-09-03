@@ -10,6 +10,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS para importación de Excel / CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div id="app-container">
@@ -23,6 +25,9 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn-tutorial-pill" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;" onclick="openModal('modal-import-excel-mobile')" title="Importar Excel o CSV">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
         <button class="btn-tutorial-pill" onclick="openModal('modal-tutorial-mobile')" title="Tutorial y guía de funcionamiento">
           <i class="fas fa-graduation-cap"></i> Tutorial
         </button>
@@ -43,6 +48,44 @@
     <main class="main-content">
       <!-- VISTA 1: INICIO / RESUMEN -->
       <section id="view-home" class="app-view active">
+        <!-- BARRA DE CONTROL TEMPORAL MÓVIL (SEMANAL, QUINCENAL, MENSUAL, ANUAL, TOTAL) -->
+        <div class="mobile-period-bar">
+          <div class="mobile-period-tabs">
+            <button type="button" class="m-period-btn active" data-period="total" onclick="setMobilePeriod('total')">Total</button>
+            <button type="button" class="m-period-btn" data-period="anual" onclick="setMobilePeriod('anual')">Año</button>
+            <button type="button" class="m-period-btn" data-period="mensual" onclick="setMobilePeriod('mensual')">Mes</button>
+            <button type="button" class="m-period-btn" data-period="quincenal" onclick="setMobilePeriod('quincenal')">Quincena</button>
+            <button type="button" class="m-period-btn" data-period="semanal" onclick="setMobilePeriod('semanal')">Semana</button>
+          </div>
+          <div class="mobile-period-subcontrols" id="m-subcontrols">
+            <select id="m-select-month" onchange="onMobilePeriodChange()" style="display: none;">
+              <option value="0">Enero</option>
+              <option value="1">Febrero</option>
+              <option value="2">Marzo</option>
+              <option value="3">Abril</option>
+              <option value="4">Mayo</option>
+              <option value="5">Junio</option>
+              <option value="6">Julio</option>
+              <option value="7">Agosto</option>
+              <option value="8">Septiembre</option>
+              <option value="9">Octubre</option>
+              <option value="10">Noviembre</option>
+              <option value="11">Diciembre</option>
+            </select>
+            <select id="m-select-fortnight" onchange="onMobilePeriodChange()" style="display: none;">
+              <option value="1">1ª Quincena (1-15)</option>
+              <option value="2">2ª Quincena (16-Fin)</option>
+            </select>
+            <select id="m-select-year" onchange="onMobilePeriodChange()" style="display: none;"></select>
+            <select id="m-select-account" onchange="onMobilePeriodChange()">
+              <option value="todas">Todas las Cuentas</option>
+            </select>
+          </div>
+          <div class="m-period-tag">
+            <i class="fas fa-calendar-check"></i> <span id="m-period-text">Todo el Histórico • Todas las cuentas</span>
+          </div>
+        </div>
+
         <!-- TARJETA PRINCIPAL DE SALDO -->
         <div class="balance-card">
           <div class="balance-meta">
@@ -514,6 +557,44 @@
         <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Usuarios registrados en el sistema y contraseñas:</p>
         <div id="admin-mobile-users-container" style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
           <!-- Lista de usuarios renderizada -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL IMPORTAR EXCEL MÓVIL -->
+    <div class="modal-overlay" id="modal-import-excel-mobile" style="display: none;">
+      <div class="modal-bottom-sheet" style="max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-file-excel" style="color: #10b981; font-size: 1.3rem;"></i>
+            <h3>Importar Excel o CSV</h3>
+          </div>
+          <button class="modal-close-btn" onclick="closeModal('modal-import-excel-mobile')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div style="overflow-y: auto; flex: 1; padding: 10px 0;">
+          <div onclick="document.getElementById('m-excel-file-input').click()" style="border: 2px dashed #10b981; background: rgba(16, 185, 129, 0.08); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer;">
+            <i class="fas fa-file-upload" style="font-size: 2rem; color: #34d399; margin-bottom: 8px;"></i>
+            <h4 style="margin: 0 0 4px 0;">Seleccionar archivo Excel</h4>
+            <p style="color: #94a3b8; font-size: 0.78rem; margin: 0;">Soporta .xlsx, .xls y .csv</p>
+            <input type="file" id="m-excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleMobileExcelSelected(event)">
+          </div>
+
+          <div id="m-excel-options" style="display: none; margin-top: 14px;">
+            <label style="font-size: 0.8rem; color: #cbd5e1; display: block; margin-bottom: 5px;">Asignar a la cuenta:</label>
+            <select id="m-excel-target-account" style="width: 100%; padding: 8px; border-radius: 8px; background: #0f172a; border: 1px solid var(--border-color); color: #fff; font-size: 0.82rem; margin-bottom: 12px;"></select>
+            
+            <div id="m-excel-stats" style="background: #0f172a; padding: 10px; border-radius: 8px; font-size: 0.78rem; border: 1px solid var(--border-color); margin-bottom: 12px;"></div>
+
+            <div id="m-excel-preview-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <button type="button" class="btn-submit-primary" id="btn-m-confirm-excel" style="display: none;" onclick="submitMobileExcelImport()">
+            Confirmar e Importar (<span id="m-excel-btn-count">0</span>)
+          </button>
         </div>
       </div>
     </div>

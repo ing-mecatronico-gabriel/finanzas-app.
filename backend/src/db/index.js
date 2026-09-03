@@ -81,6 +81,10 @@ function writeLocalDb(data) {
 }
 
 const db = {
+  resetLocalDb() {
+    writeLocalDb(JSON.parse(JSON.stringify(defaultState)));
+  },
+
   isPostgres() {
     return usePostgres;
   },
