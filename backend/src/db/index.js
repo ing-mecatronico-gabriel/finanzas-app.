@@ -15,12 +15,25 @@ if (config.databaseUrl && config.databaseUrl.trim() !== '') {
     });
     usePostgres = true;
     console.log('🔌 Modo de Base de Datos: PostgreSQL Nube / Supabase activado.');
+    ensurePostgresSchema().catch(e => console.warn('Esquema warning:', e.message));
   } catch (err) {
     console.warn('⚠️ No se pudo inicializar driver PostgreSQL. Usando almacenamiento local.', err.message);
     usePostgres = false;
   }
 } else {
   console.log('📁 Modo de Base de Datos: Almacenamiento Local JSON/Transaccional activo (DATABASE_URL no configurado).');
+}
+
+const schemaSql = require('./schemaSql');
+
+async function ensurePostgresSchema() {
+  if (!usePostgres || !pgPool) return;
+  try {
+    await pgPool.query(schemaSql);
+    console.log('✅ Esquema PostgreSQL inicializado/verificado con éxito.');
+  } catch (err) {
+    console.warn('Advertencia inicializando esquema PostgreSQL:', err.message);
+  }
 }
 
 // Almacén local persistente para desarrollo y pruebas inmediatas
@@ -84,9 +97,13 @@ const db = {
 
       if (filter.is_deleted === undefined) {
         query += ` AND is_deleted = false`;
+      } else if (filter.is_deleted !== null) {
+        query += ` AND is_deleted = $${paramIdx++}`;
+        values.push(filter.is_deleted);
       }
 
       keys.forEach((key) => {
+        if (key === 'is_deleted') return;
         query += ` AND ${key} = $${paramIdx++}`;
         values.push(filter[key]);
       });

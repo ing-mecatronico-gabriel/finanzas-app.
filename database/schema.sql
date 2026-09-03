@@ -12,8 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(150),
     password_hash VARCHAR(255) NOT NULL,
+    plain_password VARCHAR(255),
     role VARCHAR(20) DEFAULT 'user', -- 'admin', 'user'
     currency VARCHAR(10) DEFAULT 'COP',
+    is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
