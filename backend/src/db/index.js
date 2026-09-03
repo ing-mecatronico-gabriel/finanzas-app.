@@ -80,6 +80,25 @@ function writeLocalDb(data) {
   fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+let tableColumnsCache = {};
+
+async function getTableColumns(tableName) {
+  if (tableColumnsCache[tableName]) return tableColumnsCache[tableName];
+  try {
+    const res = await pgPool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = $1`,
+      [tableName]
+    );
+    if (res.rows && res.rows.length > 0) {
+      tableColumnsCache[tableName] = new Set(res.rows.map(r => r.column_name));
+      return tableColumnsCache[tableName];
+    }
+  } catch (e) {
+    console.warn('Error fetching columns for table', tableName, e.message);
+  }
+  return null;
+}
+
 const db = {
   resetLocalDb() {
     writeLocalDb(JSON.parse(JSON.stringify(defaultState)));
@@ -155,8 +174,9 @@ const db = {
 
     if (usePostgres && pgPool) {
       await ensurePostgresSchema();
-      const keys = Object.keys(record);
-      const values = Object.values(record);
+      const validCols = await getTableColumns(collectionName);
+      const keys = Object.keys(record).filter(k => !validCols || validCols.has(k));
+      const values = keys.map(k => record[k]);
       const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
       const query = `INSERT INTO ${collectionName} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`;
       const res = await pgPool.query(query, values);
@@ -179,8 +199,9 @@ const db = {
 
     if (usePostgres && pgPool) {
       await ensurePostgresSchema();
-      const keys = Object.keys(updatedFields);
-      const values = Object.values(updatedFields);
+      const validCols = await getTableColumns(collectionName);
+      const keys = Object.keys(updatedFields).filter(k => !validCols || validCols.has(k));
+      const values = keys.map(k => updatedFields[k]);
       values.push(id);
       const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
       const query = `UPDATE ${collectionName} SET ${setClause} WHERE id = $${values.length} RETURNING *`;

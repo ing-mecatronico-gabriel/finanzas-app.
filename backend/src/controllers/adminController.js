@@ -91,3 +91,32 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al eliminar usuario' });
   }
 };
+
+let maintenanceState = {
+  active: false,
+  message: '🚧 Estamos realizando mejoras en el sistema. Volveremos en unos momentos. ¡Gracias por tu paciencia!'
+};
+
+exports.getMaintenance = async (req, res) => {
+  res.json({ success: true, ...maintenanceState });
+};
+
+exports.toggleMaintenance = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.username !== '1') {
+      return res.status(403).json({ success: false, error: 'Acceso restringido a administradores' });
+    }
+    const { active, message } = req.body;
+    maintenanceState.active = active !== undefined ? !!active : !maintenanceState.active;
+    if (message) maintenanceState.message = message;
+
+    res.json({
+      success: true,
+      message: maintenanceState.active ? '🚧 Modo mantenimiento ACTIVADO' : '✅ Modo mantenimiento DESACTIVADO',
+      ...maintenanceState
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al cambiar modo mantenimiento' });
+  }
+};
+

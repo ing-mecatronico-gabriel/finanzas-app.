@@ -554,6 +554,17 @@
           <button class="modal-close-btn" onclick="closeModal('modal-admin-mobile')"><i class="fas fa-times"></i></button>
         </div>
         
+        <!-- CONTROL DE MODO MANTENIMIENTO -->
+        <div class="card-item-box" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); margin-bottom: 15px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #fbbf24; font-size: 0.92rem; display: block;">🚧 Modo Mantenimiento</strong>
+              <span id="m-maintenance-status-label" style="font-size: 0.75rem; color: #cbd5e1;">Actualmente: Desactivado</span>
+            </div>
+            <button id="btn-toggle-maint-mobile" class="btn-submit-primary" style="background: #f59e0b; padding: 6px 12px; font-size: 0.78rem; width: auto;" onclick="toggleMaintenanceModeAction()">Activar</button>
+          </div>
+        </div>
+
         <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Usuarios registrados en el sistema y contraseñas:</p>
         <div id="admin-mobile-users-container" style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
           <!-- Lista de usuarios renderizada -->
@@ -599,6 +610,21 @@
       </div>
     </div>
 
+  <!-- OVERLAY DE MODO MANTENIMIENTO (MÓVIL) -->
+  <div id="maintenance-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); z-index: 999999; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center;">
+    <div style="background: #1e293b; border: 1px solid #f59e0b; border-radius: 16px; padding: 32px 20px; max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      <div style="font-size: 3.5rem; margin-bottom: 16px;">🚧</div>
+      <h2 style="color: #fbbf24; margin: 0 0 12px 0; font-size: 1.3rem;">Sistema en Mantenimiento</h2>
+      <p id="maintenance-message" style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px;">
+        Estamos realizando mejoras en el sistema. Volveremos en unos momentos. ¡Gracias por tu paciencia!
+      </p>
+      <button class="btn-submit-primary" style="background: #334155; border: 1px solid #475569;" onclick="location.reload()">
+        <i class="fas fa-sync-alt"></i> Reintentar Conexión
+      </button>
+      <div style="margin-top: 16px;">
+        <a href="#" onclick="openAuthModal(); document.getElementById('maintenance-overlay').style.display='none';" style="font-size: 0.78rem; color: #94a3b8; text-decoration: underline;">¿Eres Administrador? Inicia sesión aquí</a>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

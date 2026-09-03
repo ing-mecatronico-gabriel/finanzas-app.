@@ -119,17 +119,60 @@ function setupEventListeners() {
 
 // Autenticación inicial
 async function checkAuthAndInit() {
+  await checkMaintenanceStatus();
+
   if (!AppState.token) {
-    // Si no hay token, crear automáticamente usuario demo o abrir modal auth
     openAuthModal();
   } else {
     updateUserDisplay();
+    if (AppState.isOnline) {
+      await fetchDirectAccounts();
+    }
     renderAllViews();
     if (AppState.isOnline) {
       await performAutoSync();
     } else {
       updateSyncIndicator('offline', 'Sin conexión');
     }
+  }
+}
+
+async function fetchDirectAccounts() {
+  if (!AppState.token) return;
+  try {
+    const res = await fetch(`${API_BASE}/accounts`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.accounts) {
+        AppState.accounts = data.accounts.filter(a => !a.is_deleted);
+        localStorage.setItem('finanzas_accounts', JSON.stringify(AppState.accounts));
+        populateAccountSelects();
+      }
+    }
+  } catch (e) {
+    console.warn('Error obteniendo cuentas directamente:', e);
+  }
+}
+
+async function checkMaintenanceStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/system/maintenance`);
+    const data = await res.json();
+    const isAdmin = AppState.user && (AppState.user.role === 'admin' || AppState.user.username === '1');
+    const overlay = document.getElementById('maintenance-overlay');
+    if (data.active && !isAdmin) {
+      if (overlay) {
+        overlay.style.display = 'flex';
+        const msg = document.getElementById('maintenance-message');
+        if (msg) msg.textContent = data.message;
+      }
+    } else {
+      if (overlay) overlay.style.display = 'none';
+    }
+  } catch (e) {
+    console.warn('No se pudo verificar estado de mantenimiento:', e);
   }
 }
 
@@ -873,6 +916,12 @@ async function openAdminMobileModal() {
   const container = document.getElementById('admin-mobile-users-container');
   if (!container) return;
 
+  try {
+    const maintRes = await fetch(`${API_BASE}/system/maintenance`);
+    const maintData = await maintRes.json();
+    updateMobileMaintenanceUI(maintData.active);
+  } catch (e) {}
+
   container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 12px;">Cargando usuarios...</div>`;
   openModal('modal-admin-mobile');
 
@@ -1205,4 +1254,45 @@ async function submitMobileExcelImport() {
     }
   }
 }
+
+// ==========================================================
+// MODO MANTENIMIENTO MÓVIL
+// ==========================================================
+function updateMobileMaintenanceUI(active) {
+  const label = document.getElementById('m-maintenance-status-label');
+  const btn = document.getElementById('btn-toggle-maint-mobile');
+  if (label) {
+    label.innerHTML = active
+      ? `Actualmente: <strong style="color: #ef4444;">ACTIVADO</strong>`
+      : `Actualmente: <strong style="color: #10b981;">Desactivado</strong>`;
+  }
+  if (btn) {
+    btn.textContent = active ? 'Desactivar' : 'Activar';
+    btn.style.background = active ? '#10b981' : '#f59e0b';
+  }
+}
+
+async function toggleMaintenanceModeAction() {
+  if (!confirm('¿Deseas cambiar el estado del Modo Mantenimiento?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/maintenance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AppState.token}`
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      updateMobileMaintenanceUI(data.active);
+    } else {
+      alert('Error: ' + (data.error || 'No autorizado'));
+    }
+  } catch (err) {
+    alert('Error al conectar: ' + err.message);
+  }
+}
+
 

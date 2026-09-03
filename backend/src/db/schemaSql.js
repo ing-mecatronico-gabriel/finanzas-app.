@@ -62,7 +62,30 @@ CREATE TABLE IF NOT EXISTS transactions (
     recurring_rule_id UUID,
     is_deleted BOOLEAN DEFAULT FALSE,
     device_id VARCHAR(100),
+    subcategory VARCHAR(100),
+    expense_nature VARCHAR(50),
+    necessity VARCHAR(50),
+    frequency VARCHAR(50),
+    time VARCHAR(20),
+    notes TEXT,
+    sync_status VARCHAR(20) DEFAULT 'synced',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Asegurar columnas si la tabla transactions ya existía previamente
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS expense_nature VARCHAR(50);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS necessity VARCHAR(50);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS frequency VARCHAR(50);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS time VARCHAR(20);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS sync_status VARCHAR(20) DEFAULT 'synced';
+
+-- Tabla de configuración global (ej. Modo Mantenimiento)
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

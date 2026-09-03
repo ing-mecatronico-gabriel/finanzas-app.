@@ -26,9 +26,15 @@ exports.pull = async (req, res) => {
 
     const data = {};
 
+    const sinceTime = new Date(since || '1970-01-01T00:00:00.000Z').getTime();
+
     for (const col of collections) {
       const allItems = await db.find(col, { user_id: userId, is_deleted: undefined });
-      data[col] = allItems.filter(item => item.updated_at && item.updated_at > since);
+      data[col] = allItems.filter(item => {
+        if (!item.updated_at) return true;
+        const itemTime = new Date(item.updated_at).getTime();
+        return isNaN(itemTime) || itemTime >= sinceTime;
+      });
     }
 
     res.json({

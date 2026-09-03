@@ -92,6 +92,8 @@ function setupEventListeners() {
 
 // Autenticación inicial
 async function checkAuthAndInit() {
+  await checkMaintenanceDesktop();
+
   if (!DesktopState.token) {
     openModal('modal-desktop-auth');
   } else {
@@ -1603,4 +1605,71 @@ async function submitExcelImport() {
     }
   }
 }
+
+// ==========================================================
+// CONTROL DE MODO MANTENIMIENTO DESKTOP
+// ==========================================================
+async function checkMaintenanceDesktop() {
+  try {
+    const res = await fetch(`${API_BASE}/system/maintenance`);
+    const data = await res.json();
+    const isAdmin = DesktopState.user && (DesktopState.user.role === 'admin' || DesktopState.user.username === '1');
+    const overlay = document.getElementById('maintenance-overlay');
+    
+    if (data.active && !isAdmin) {
+      if (overlay) {
+        overlay.style.display = 'flex';
+        const msg = document.getElementById('maintenance-message');
+        if (msg) msg.textContent = data.message;
+      }
+    } else {
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    updateMaintenanceAdminUI(data.active);
+  } catch (e) {
+    console.warn('Error verificando mantenimiento:', e);
+  }
+}
+
+function updateMaintenanceAdminUI(active) {
+  const desc = document.getElementById('desktop-maint-status-desc');
+  const btn = document.getElementById('btn-toggle-maint-desktop');
+  if (desc) {
+    desc.innerHTML = active
+      ? `Actualmente: <strong style="color: #ef4444;">ACTIVADO</strong> (Solo administradores tienen acceso. Los demás usuarios ven la pantalla de mantenimiento).`
+      : `Actualmente: <strong style="color: #10b981;">Desactivado</strong> (La plataforma está accesible para todos los usuarios).`;
+  }
+  if (btn) {
+    btn.innerHTML = active
+      ? `<i class="fas fa-check-circle"></i> Desactivar Modo Mantenimiento`
+      : `<i class="fas fa-tools"></i> Activar Modo Mantenimiento`;
+    btn.style.background = active ? '#10b981' : '#f59e0b';
+    btn.style.borderColor = active ? '#059669' : '#d97706';
+  }
+}
+
+async function toggleMaintenanceDesktop() {
+  if (!confirm('¿Deseas cambiar el estado del Modo Mantenimiento?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/maintenance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DesktopState.token}`
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      updateMaintenanceAdminUI(data.active);
+    } else {
+      alert('Error: ' + (data.error || 'No autorizado'));
+    }
+  } catch (err) {
+    alert('Error al conectar: ' + err.message);
+  }
+}
+
 

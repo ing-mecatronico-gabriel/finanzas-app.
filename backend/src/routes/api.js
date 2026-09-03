@@ -66,7 +66,9 @@ router.post('/sync/push', syncController.push);
 router.get('/reports/analytics', reportController.getAnalytics);
 router.get('/export/csv', reportController.exportCsv);
 
-// 10. MODO ADMINISTRADOR (USUARIO 1, CONTRASEÑA 1)
+// 10. MODO ADMINISTRADOR (USUARIO 1, CONTRASEÑA 1) Y MANTENIMIENTO
+router.get('/system/maintenance', adminController.getMaintenance);
+router.post('/admin/maintenance', adminController.toggleMaintenance);
 router.get('/admin/users', adminController.getUsers);
 router.put('/admin/users/:id/password', adminController.updateUserPassword);
 router.delete('/admin/users/:id', adminController.deleteUser);
