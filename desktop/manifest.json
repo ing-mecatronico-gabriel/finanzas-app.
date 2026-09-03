@@ -1,0 +1,18 @@
+{
+  "name": "FinanzasApp — Panel Financiero de Escritorio",
+  "short_name": "Finanzas Desktop",
+  "description": "Panel de control financiero profesional para laptop y computadores de escritorio.",
+  "start_url": "/desktop/",
+  "scope": "/desktop/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

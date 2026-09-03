@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FinanzasApp Móvil</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- BARRA SUPERIOR MÓVIL -->
+    <header class="top-header">
+      <div class="user-greeting">
+        <div class="avatar" id="header-avatar">U</div>
+        <div class="user-text">
+          <span class="greeting-sub">Hola de nuevo</span>
+          <h2 class="user-name" id="user-display-name">Usuario</h2>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn-tutorial-pill" onclick="openModal('modal-tutorial-mobile')" title="Tutorial y guía de funcionamiento">
+          <i class="fas fa-graduation-cap"></i> Tutorial
+        </button>
+        <div class="sync-status-pill" id="sync-pill" title="Estado de sincronización en la nube">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span class="sync-text" id="sync-text">Sincronizado</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER DE SIN CONEXIÓN (OFFLINE) -->
+    <div class="offline-banner" id="offline-banner" style="display: none;">
+      <i class="fas fa-wifi-slash"></i>
+      <span>Modo sin conexión. Guardando localmente.</span>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL SCROLLEABLE -->
+    <main class="main-content">
+      <!-- VISTA 1: INICIO / RESUMEN -->
+      <section id="view-home" class="app-view active">
+        <!-- TARJETA PRINCIPAL DE SALDO -->
+        <div class="balance-card">
+          <div class="balance-meta">
+            <span class="balance-label">Dinero Disponible Total</span>
+            <span class="currency-tag" id="currency-tag">COP $</span>
+          </div>
+          <h1 class="balance-amount" id="total-available-balance">$ 0</h1>
+          
+          <div class="balance-breakdown">
+            <div class="breakdown-item">
+              <span class="breakdown-icon cash"><i class="fas fa-money-bill-wave"></i></span>
+              <div class="breakdown-info">
+                <span class="breakdown-title">Efectivo Físico</span>
+                <span class="breakdown-val" id="cash-balance">$ 0</span>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-icon bank"><i class="fas fa-university"></i></span>
+              <div class="breakdown-info">
+                <span class="breakdown-title">Bancos y Billeteras</span>
+                <span class="breakdown-val" id="banks-balance">$ 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESUMEN MENSUAL RÁPIDO -->
+        <div class="month-summary-grid">
+          <div class="summary-mini-card income">
+            <div class="mini-card-head">
+              <span>Ingresos Mes</span>
+              <i class="fas fa-arrow-down"></i>
+            </div>
+            <span class="mini-card-amt" id="monthly-income-stat">+$ 0</span>
+          </div>
+          <div class="summary-mini-card expense">
+            <div class="mini-card-head">
+              <span>Gastos Mes</span>
+              <i class="fas fa-arrow-up"></i>
+            </div>
+            <span class="mini-card-amt" id="monthly-expense-stat">-$ 0</span>
+          </div>
+        </div>
+
+        <!-- MIS CUENTAS (SLIDER HORIZONTAL TÁCTIL) -->
+        <div class="section-block">
+          <div class="section-header">
+            <h3>Mis Cuentas</h3>
+            <button class="btn-text-action" id="btn-add-account-quick"><i class="fas fa-plus"></i> Nueva</button>
+          </div>
+          <div class="accounts-scroll-container" id="accounts-list-container">
+            <!-- Cuentas renderizadas dinámicamente -->
+            <div class="loading-placeholder">Cargando cuentas...</div>
+          </div>
+        </div>
+
+        <!-- ÚLTIMOS MOVIMIENTOS -->
+        <div class="section-block">
+          <div class="section-header">
+            <h3>Últimos Movimientos</h3>
+            <button class="btn-text-action" onclick="switchTab('transactions')">Ver todos</button>
+          </div>
+          <div class="transactions-list" id="recent-transactions-container">
+            <!-- Transacciones renderizadas dinámicamente -->
+            <div class="empty-state">No hay movimientos recientes</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 2: LISTA DE MOVIMIENTOS -->
+      <section id="view-transactions" class="app-view">
+        <div class="view-header">
+          <h2>Historial de Movimientos</h2>
+          <p class="view-subtitle">Ingresos, egresos y transferencias</p>
+        </div>
+
+        <!-- FILTROS TÁCTILES RÁPIDOS -->
+        <div class="filter-chips-row">
+          <button class="chip active" data-type="todos" onclick="filterTransactionsType('todos', this)">Todos</button>
+          <button class="chip" data-type="egreso" onclick="filterTransactionsType('egreso', this)">Gastos</button>
+          <button class="chip" data-type="ingreso" onclick="filterTransactionsType('ingreso', this)">Ingresos</button>
+          <button class="chip" data-type="transferencia" onclick="filterTransactionsType('transferencia', this)">Transferencias</button>
+        </div>
+
+        <div class="transactions-list" id="all-transactions-container" style="margin-top: 15px;">
+          <!-- Lista completa de transacciones -->
+        </div>
+      </section>
+
+      <!-- VISTA 3: TARJETAS Y DEUDAS -->
+      <section id="view-debts" class="app-view">
+        <div class="view-header">
+          <h2>Crédito y Deudas</h2>
+          <p class="view-subtitle">Control de tarjetas y compromisos</p>
+        </div>
+
+        <!-- TARJETAS DE CRÉDITO -->
+        <div class="section-block">
+          <div class="section-header">
+            <h3>Tarjetas de Crédito</h3>
+            <button class="btn-text-action" id="btn-add-card-quick"><i class="fas fa-plus"></i> Añadir</button>
+          </div>
+          <div id="mobile-cards-container" class="cards-list">
+            <!-- Tarjetas renderizadas -->
+          </div>
+        </div>
+
+        <!-- DEUDAS Y PRÉSTAMOS -->
+        <div class="section-block">
+          <div class="section-header">
+            <h3>Deudas Pendientes</h3>
+            <button class="btn-text-action" id="btn-add-debt-quick"><i class="fas fa-plus"></i> Nueva</button>
+          </div>
+          <div id="mobile-debts-container" class="debts-list">
+            <!-- Deudas renderizadas -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 4: PRESUPUESTOS -->
+      <section id="view-budgets" class="app-view">
+        <div class="view-header">
+          <h2>Presupuestos</h2>
+          <p class="view-subtitle">Límites y control de gasto real</p>
+        </div>
+        <div class="section-header">
+          <h3>Mis Presupuestos</h3>
+          <button class="btn-text-action" id="btn-add-budget-quick"><i class="fas fa-plus"></i> Crear</button>
+        </div>
+        <div id="mobile-budgets-container" class="budgets-list">
+          <!-- Presupuestos renderizados -->
+        </div>
+      </section>
+
+      <!-- VISTA 5: AJUSTES Y NUBE -->
+      <section id="view-settings" class="app-view">
+        <div class="view-header">
+          <h2>Ajustes y Sincronización</h2>
+          <p class="view-subtitle">Configuración del sistema y estado en la nube</p>
+        </div>
+
+        <div class="settings-card">
+          <div class="setting-item">
+            <div class="setting-left">
+              <i class="fas fa-cloud sync-icon"></i>
+              <div>
+                <strong>Sincronización en la Nube</strong>
+                <span id="last-sync-time" class="setting-desc">Última: comprobando...</span>
+              </div>
+            </div>
+            <button class="btn-secondary-sm" id="btn-manual-sync"><i class="fas fa-sync-alt"></i> Sincronizar</button>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-left">
+              <i class="fas fa-layer-group"></i>
+              <div>
+                <strong>Cola Pendiente Offline</strong>
+                <span id="offline-queue-count" class="setting-desc">0 cambios pendientes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-left">
+              <i class="fas fa-mobile-alt"></i>
+              <div>
+                <strong>Instalar App (PWA)</strong>
+                <span class="setting-desc">Agrega FinanzasApp a tu pantalla de inicio</span>
+              </div>
+            </div>
+            <button class="btn-secondary-sm" id="btn-install-pwa">Instalar</button>
+          </div>
+        </div>
+
+        <div class="settings-card" style="margin-top: 20px;">
+          <div class="setting-item" id="item-admin-mobile" style="display: none;">
+            <div class="setting-left">
+              <i class="fas fa-user-shield" style="color: #fbbf24;"></i>
+              <div>
+                <strong style="color: #fbbf24;">Panel de Administración</strong>
+                <span class="setting-desc">Ver usuarios y contraseñas</span>
+              </div>
+            </div>
+            <button class="btn-secondary-sm" onclick="openAdminMobileModal()"><i class="fas fa-users-cog"></i> Abrir</button>
+          </div>
+
+          <div class="setting-item" id="user-info-setting">
+            <div class="setting-left">
+              <i class="fas fa-user-circle"></i>
+              <div>
+                <strong id="setting-user-name">Usuario</strong>
+                <span id="setting-user-role" class="setting-desc" style="color: #60a5fa;">@usuario</span>
+              </div>
+            </div>
+            <button class="btn-danger-sm" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Salir</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTÓN FLOTANTE REGISTRO RÁPIDO (+) -->
+    <button class="floating-add-btn" id="btn-floating-add" title="Registro Rápido de Movimiento">
+      <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR (BOTTOM NAV) -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home" onclick="switchTab('home')">
+        <i class="fas fa-home"></i>
+        <span>Inicio</span>
+      </button>
+      <button class="nav-item" data-tab="transactions" onclick="switchTab('transactions')">
+        <i class="fas fa-exchange-alt"></i>
+        <span>Movimientos</span>
+      </button>
+      <div class="nav-spacer"></div>
+      <button class="nav-item" data-tab="debts" onclick="switchTab('debts')">
+        <i class="fas fa-credit-card"></i>
+        <span>Créditos</span>
+      </button>
+      <button class="nav-item" data-tab="budgets" onclick="switchTab('budgets')">
+        <i class="fas fa-bullseye"></i>
+        <span>Presupuestos</span>
+      </button>
+      <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+        <i class="fas fa-cog"></i>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+
+    <!-- MODAL DE REGISTRO RÁPIDO DE TRANSACCIÓN -->
+    <div class="modal-overlay" id="modal-transaction" style="display: none;">
+      <div class="modal-bottom-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <h3 id="modal-transaction-title">Registrar Movimiento</h3>
+          <button class="modal-close-btn" onclick="closeModal('modal-transaction')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- TABS DE TIPO: GASTO / INGRESO / TRANSFERENCIA -->
+        <div class="tx-type-tabs">
+          <button class="type-tab active" data-type="egreso" onclick="setTransactionModalType('egreso')">Gasto</button>
+          <button class="type-tab" data-type="ingreso" onclick="setTransactionModalType('ingreso')">Ingreso</button>
+          <button class="type-tab" data-type="transferencia" onclick="setTransactionModalType('transferencia')">Transferencia</button>
+        </div>
+
+        <form id="form-transaction">
+          <!-- VALOR GRANDE TÁCTIL -->
+          <div class="form-group amount-group">
+            <label>Monto</label>
+            <div class="amount-input-wrapper">
+              <span class="currency-prefix">$</span>
+              <input type="number" id="tx-amount" step="any" placeholder="0" required inputmode="decimal">
+            </div>
+          </div>
+
+          <!-- CUENTA ORIGEN -->
+          <div class="form-group">
+            <label id="lbl-tx-account">Cuenta</label>
+            <select id="tx-account" required>
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <!-- CUENTA DESTINO (SOLO TRANSFERENCIA) -->
+          <div class="form-group" id="group-tx-to-account" style="display: none;">
+            <label>Cuenta Destino</label>
+            <select id="tx-to-account">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <!-- CATEGORÍA (SOLO GASTO E INGRESO) -->
+          <div class="form-group" id="group-tx-category">
+            <label>Categoría</label>
+            <select id="tx-category">
+              <!-- Opciones dinámicas de categorías -->
+            </select>
+          </div>
+
+          <!-- DESCRIPCIÓN -->
+          <div class="form-group">
+            <label>Descripción / Concepto</label>
+            <input type="text" id="tx-description" placeholder="Ej. Almuerzo, Uber, Salario">
+          </div>
+
+          <!-- FECHA Y HORA -->
+          <div class="form-row">
+            <div class="form-group col">
+              <label>Fecha</label>
+              <input type="date" id="tx-date">
+            </div>
+            <div class="form-group col">
+              <label>Método de Pago</label>
+              <select id="tx-payment-method">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Tarjeta de Débito">Tarjeta Débito</option>
+                <option value="Tarjeta de Crédito">Tarjeta Crédito</option>
+                <option value="Billetera Digital">Billetera Digital</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-primary" id="btn-save-tx">
+            <i class="fas fa-check"></i> Guardar Movimiento
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE PAGO / ABONO A DEUDA -->
+    <div class="modal-overlay" id="modal-debt-payment" style="display: none;">
+      <div class="modal-bottom-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <h3>Abonar a Deuda</h3>
+          <button class="modal-close-btn" onclick="closeModal('modal-debt-payment')"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-debt-payment">
+          <input type="hidden" id="pay-debt-id">
+          <p id="pay-debt-info" style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 15px;"></p>
+
+          <div class="form-group amount-group">
+            <label>Monto a Abonar</label>
+            <div class="amount-input-wrapper">
+              <span class="currency-prefix">$</span>
+              <input type="number" id="pay-amount" step="any" placeholder="0" required inputmode="decimal">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Descontar de Cuenta</label>
+            <select id="pay-account-id">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <button type="submit" class="btn-submit-primary">
+            <i class="fas fa-check-circle"></i> Confirmar Abono
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE NUEVA CUENTA -->
+    <div class="modal-overlay" id="modal-new-account" style="display: none;">
+      <div class="modal-bottom-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <h3>Nueva Cuenta Financiera</h3>
+          <button class="modal-close-btn" onclick="closeModal('modal-new-account')"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-new-account">
+          <div class="form-group">
+            <label>Nombre de la Cuenta</label>
+            <input type="text" id="new-acc-name" placeholder="Ej. Ahorros Banco, Efectivo Caja" required>
+          </div>
+          <div class="form-group">
+            <label>Tipo de Cuenta</label>
+            <select id="new-acc-type" required>
+              <option value="Bancaria">Cuenta Bancaria</option>
+              <option value="Ahorros">Ahorros</option>
+              <option value="Corriente">Corriente</option>
+              <option value="Efectivo">Efectivo Físico</option>
+              <option value="Billetera digital">Billetera Digital</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Daviplata">Daviplata</option>
+              <option value="Otras">Otras</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Saldo Inicial</label>
+            <input type="number" id="new-acc-balance" placeholder="0" value="0" step="any" inputmode="decimal">
+          </div>
+          <button type="submit" class="btn-submit-primary">Guardar Cuenta</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE INICIO DE SESIÓN / REGISTRO (SOLO USUARIO Y CONTRASEÑA) -->
+    <div class="modal-overlay" id="modal-auth" style="display: none;">
+      <div class="modal-auth-dialog">
+        <div class="auth-header">
+          <div class="auth-icon">💰</div>
+          <h2>Bienvenido a FinanzasApp</h2>
+          <p>Accede con tu usuario y contraseña</p>
+        </div>
+
+        <div class="tx-type-tabs" style="margin-bottom: 20px;">
+          <button type="button" class="type-tab active" id="tab-login" onclick="toggleAuthMode('login')">Ingresar</button>
+          <button type="button" class="type-tab" id="tab-register" onclick="toggleAuthMode('register')">Registrarse</button>
+        </div>
+
+        <form id="form-auth">
+          <div class="form-group" id="auth-group-name" style="display: none;">
+            <label>Nombre Completo (Opcional)</label>
+            <input type="text" id="auth-name" placeholder="Tu nombre">
+          </div>
+          <div class="form-group">
+            <label>Usuario</label>
+            <input type="text" id="auth-username" placeholder="Ingresa tu usuario" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-submit-primary" id="btn-auth-submit">Iniciar Sesión</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE TUTORIAL MÓVIL -->
+    <div class="modal-overlay" id="modal-tutorial-mobile" style="display: none;">
+      <div class="modal-bottom-sheet" style="max-height: 85vh;">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-graduation-cap" style="color: #8b5cf6; font-size: 1.3rem;"></i>
+            <h3>Tutorial: Guía de Uso Rápido</h3>
+          </div>
+          <button class="modal-close-btn" onclick="closeModal('modal-tutorial-mobile')"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px;">
+          <div class="card-item-box" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3);">
+            <strong style="color: #34d399;">1. 🚀 Inicio desde Cero ($0)</strong>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Tu cuenta comienza con saldo en $0. No hay números de prueba ni datos inventados.</p>
+          </div>
+
+          <div class="card-item-box" style="background: rgba(37, 99, 235, 0.12); border-color: rgba(37, 99, 235, 0.3);">
+            <strong style="color: #60a5fa;">2. ➕ Registro Rápido en Segundos</strong>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Toca el botón circular <strong>(+)</strong> abajo a la derecha para registrar tus gastos, compras o ingresos en menos de 5 segundos.</p>
+          </div>
+
+          <div class="card-item-box" style="background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.3);">
+            <strong style="color: #a78bfa;">3. 🏦 Efectivo y Cuentas</strong>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Lleva el control de tu dinero físico en <strong>Efectivo</strong> y tus cuentas bancarias o billeteras (Nequi, Daviplata) por separado.</p>
+          </div>
+
+          <div class="card-item-box" style="background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3);">
+            <strong style="color: #fbbf24;">4. ⇄ Transferencias Neutras</strong>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Mover dinero de tu banco a efectivo no cuenta como gasto ni como ingreso; sólo traslada saldo entre tus bolsillos.</p>
+          </div>
+
+          <div class="card-item-box" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3);">
+            <strong style="color: #f87171;">5. 📶 Funciona Sin Internet</strong>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Si estás sin señal o en modo avión, la app guarda tus movimientos y los sube sola al recuperar internet. <strong>La laptop puede estar apagada</strong>.</p>
+          </div>
+        </div>
+
+        <button class="btn-submit-primary" onclick="closeModal('modal-tutorial-mobile')">¡Entendido!</button>
+      </div>
+    </div>
+
+    <!-- MODAL PANEL DE ADMINISTRACIÓN MÓVIL (USUARIO 1, CONTRASEÑA 1) -->
+    <div class="modal-overlay" id="modal-admin-mobile" style="display: none;">
+      <div class="modal-bottom-sheet" style="max-height: 90vh;">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-user-shield" style="color: #fbbf24; font-size: 1.2rem;"></i>
+            <h3>Panel de Administración</h3>
+          </div>
+          <button class="modal-close-btn" onclick="closeModal('modal-admin-mobile')"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Usuarios registrados en el sistema y contraseñas:</p>
+        <div id="admin-mobile-users-container" style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
+          <!-- Lista de usuarios renderizada -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanzasApp — Panel de Control Financiero</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js para gráficos financieros reales -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="layout-container">
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fas fa-coins"></i></div>
+        <div class="brand-text">
+          <h2>FinanzasApp</h2>
+          <span>Panel Laptop / Cloud</span>
+        </div>
+      </div>
+
+      <!-- ESTADO DE SINCRONIZACIÓN CLOUD -->
+      <div class="cloud-sync-card">
+        <div class="sync-badge" id="desktop-sync-badge">
+          <span class="pulse-dot"></span>
+          <span id="desktop-sync-text">🟢 Sincronizado</span>
+        </div>
+        <span class="sync-caption" id="desktop-last-sync">Nube centralizada</span>
+        <button class="btn-sync-now" id="btn-desktop-sync"><i class="fas fa-sync-alt"></i> Sincronizar</button>
+      </div>
+
+      <!-- MENÚ DE NAVEGACIÓN -->
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-view="dashboard" onclick="navigate('dashboard')">
+          <i class="fas fa-chart-pie"></i> <span>Dashboard Principal</span>
+        </button>
+        <button class="nav-btn" data-view="transactions" onclick="navigate('transactions')">
+          <i class="fas fa-exchange-alt"></i> <span>Movimientos & Historial</span>
+        </button>
+        <button class="nav-btn" data-view="accounts" onclick="navigate('accounts')">
+          <i class="fas fa-university"></i> <span>Cuentas & Efectivo</span>
+        </button>
+        <button class="nav-btn" data-view="cards" onclick="navigate('cards')">
+          <i class="fas fa-credit-card"></i> <span>Tarjetas de Crédito</span>
+        </button>
+        <button class="nav-btn" data-view="debts" onclick="navigate('debts')">
+          <i class="fas fa-hand-holding-usd"></i> <span>Deudas & Compromisos</span>
+        </button>
+        <button class="nav-btn" data-view="budgets" onclick="navigate('budgets')">
+          <i class="fas fa-bullseye"></i> <span>Presupuestos</span>
+        </button>
+        <button class="nav-btn" data-view="recurring" onclick="navigate('recurring')">
+          <i class="fas fa-calendar-check"></i> <span>Gastos Recurrentes</span>
+        </button>
+        <button class="nav-btn" data-view="calendar" onclick="navigate('calendar')">
+          <i class="fas fa-calendar-alt"></i> <span>Calendario de Pagos</span>
+        </button>
+        <button class="nav-btn" data-view="export" onclick="navigate('export')">
+          <i class="fas fa-file-export"></i> <span>Informes & Exportación</span>
+        </button>
+        <button class="nav-btn" id="btn-nav-admin" style="display: none; color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.1);" data-view="admin" onclick="navigate('admin')">
+          <i class="fas fa-user-shield"></i> <span>👑 Modo Administrador</span>
+        </button>
+      </nav>
+
+      <!-- PERFIL DE USUARIO INFERIOR -->
+      <div class="user-profile-widget">
+        <div class="user-avatar" id="desktop-avatar">U</div>
+        <div class="user-details">
+          <strong id="desktop-user-name">Usuario</strong>
+          <span id="desktop-user-role" style="font-size: 0.72rem; color: #60a5fa;">cargando...</span>
+        </div>
+        <button class="btn-icon-logout" id="btn-desktop-logout" title="Cerrar Sesión">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- PANEL PRINCIPAL (MAIN VIEWPORT) -->
+    <main class="main-viewport">
+      <!-- CABECERA SUPERIOR -->
+      <header class="desktop-header">
+        <div>
+          <h1 id="page-title">Dashboard Financiero</h1>
+          <p class="page-subtitle" id="page-subtitle">Visión general de tus finanzas en tiempo real</p>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn-action" onclick="openModal('modal-tutorial')" style="background: #8b5cf6;" title="Guía y tutorial de funcionamiento">
+            <i class="fas fa-graduation-cap"></i> Tutorial
+          </button>
+          <button class="btn-action btn-expense" onclick="openTxModal('egreso')">
+            <i class="fas fa-minus-circle"></i> Nuevo Gasto
+          </button>
+          <button class="btn-action btn-income" onclick="openTxModal('ingreso')">
+            <i class="fas fa-plus-circle"></i> Nuevo Ingreso
+          </button>
+          <button class="btn-action btn-transfer" onclick="openTxModal('transferencia')">
+            <i class="fas fa-exchange-alt"></i> Transferencia
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR DE VISTAS INTERCAMBIABLES -->
+      <div class="content-scroll">
+        
+        <!-- VISTA 1: DASHBOARD PRINCIPAL -->
+        <section id="view-dashboard" class="desktop-view active">
+          <!-- 8 TARJETAS KPIS OBLIGATORIAS -->
+          <div class="kpi-grid">
+            <div class="kpi-card highlight">
+              <div class="kpi-head">
+                <span>DINERO DISPONIBLE</span>
+                <i class="fas fa-wallet"></i>
+              </div>
+              <h2 id="kpi-total-available">$ 0</h2>
+              <span class="kpi-foot">Cuentas + Efectivo</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>CUENTAS BANCARIAS</span>
+                <i class="fas fa-landmark"></i>
+              </div>
+              <h2 id="kpi-banks-balance">$ 0</h2>
+              <span class="kpi-foot">Bancos y Billeteras</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>EFECTIVO FÍSICO</span>
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <h2 id="kpi-cash-balance">$ 0</h2>
+              <span class="kpi-foot">Dinero en mano</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>CRÉDITO DISPONIBLE</span>
+                <i class="fas fa-credit-card"></i>
+              </div>
+              <h2 id="kpi-credit-available" style="color: #a5b4fc;">$ 0</h2>
+              <span class="kpi-foot" id="kpi-credit-total">Límite: $ 0</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>DEUDAS PENDIENTES</span>
+                <i class="fas fa-hand-holding-usd"></i>
+              </div>
+              <h2 id="kpi-total-debts" style="color: #f87171;">$ 0</h2>
+              <span class="kpi-foot">Por pagar</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>INGRESOS DEL MES</span>
+                <i class="fas fa-arrow-down" style="color: #34d399;"></i>
+              </div>
+              <h2 id="kpi-month-income" style="color: #34d399;">$ 0</h2>
+              <span class="kpi-foot">Mes actual</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>EGRESOS DEL MES</span>
+                <i class="fas fa-arrow-up" style="color: #f87171;"></i>
+              </div>
+              <h2 id="kpi-month-expense" style="color: #f87171;">$ 0</h2>
+              <span class="kpi-foot">Mes actual</span>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span>BALANCE NETO</span>
+                <i class="fas fa-balance-scale"></i>
+              </div>
+              <h2 id="kpi-month-balance">$ 0</h2>
+              <span class="kpi-foot">Ingresos - Egresos</span>
+            </div>
+          </div>
+
+          <!-- BANNER DE ANÁLISIS FINANCIERO DINÁMICO -->
+          <div class="insights-box">
+            <div class="insights-head">
+              <i class="fas fa-lightbulb"></i>
+              <h3>Diagnóstico Financiero Inteligente</h3>
+            </div>
+            <div class="insights-list" id="insights-container">
+              <p>Analizando tus patrones financieros con datos reales...</p>
+            </div>
+          </div>
+
+          <!-- CUADRÍCULA DE GRÁFICAS CHART.JS -->
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Ingresos vs Egresos (Últimos 6 Meses)</h3>
+                <span class="chart-badge">Datos Reales</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chart-income-expense"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Gastos por Categoría</h3>
+                <span class="chart-badge">Distribución</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chart-categories"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Presupuesto vs Gasto Real</h3>
+                <span class="chart-badge">Límites</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chart-budgets-bar"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Distribución del Patrimonio</h3>
+                <span class="chart-badge">Activos vs Pasivos</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chart-networth"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 2: HISTORIAL Y TABLA DE MOVIMIENTOS -->
+        <section id="view-transactions" class="desktop-view">
+          <div class="table-card">
+            <!-- BARRA DE FILTROS AVANZADOS -->
+            <div class="filters-toolbar">
+              <div class="filter-item search-item">
+                <i class="fas fa-search"></i>
+                <input type="text" id="filter-search" placeholder="Buscar por descripción, nota o categoría..." oninput="applyFilters()">
+              </div>
+              <div class="filter-item">
+                <label>Tipo:</label>
+                <select id="filter-type" onchange="applyFilters()">
+                  <option value="todos">Todos</option>
+                  <option value="ingreso">Ingresos</option>
+                  <option value="egreso">Gastos</option>
+                  <option value="transferencia">Transferencias</option>
+                </select>
+              </div>
+              <div class="filter-item">
+                <label>Cuenta:</label>
+                <select id="filter-account" onchange="applyFilters()">
+                  <option value="todas">Todas las cuentas</option>
+                </select>
+              </div>
+              <div class="filter-item">
+                <label>Desde:</label>
+                <input type="date" id="filter-start-date" onchange="applyFilters()">
+              </div>
+              <div class="filter-item">
+                <label>Hasta:</label>
+                <input type="date" id="filter-end-date" onchange="applyFilters()">
+              </div>
+            </div>
+
+            <!-- TABLA DE MOVIMIENTOS -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha / Hora</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Cuenta</th>
+                    <th>Método</th>
+                    <th>Monto</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="transactions-tbody">
+                  <!-- Rellenado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 3: CUENTAS Y EFECTIVO -->
+        <section id="view-accounts" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Cuentas Bancarias, Billeteras y Efectivo</h3>
+            <button class="btn-primary" onclick="openModal('modal-account')"><i class="fas fa-plus"></i> Nueva Cuenta</button>
+          </div>
+          <div class="accounts-cards-grid" id="accounts-grid">
+            <!-- Cuentas renderizadas -->
+          </div>
+        </section>
+
+        <!-- VISTA 4: TARJETAS DE CRÉDITO -->
+        <section id="view-cards" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Tarjetas de Crédito Registradas</h3>
+            <button class="btn-primary" onclick="openModal('modal-card')"><i class="fas fa-plus"></i> Añadir Tarjeta</button>
+          </div>
+          <div class="cards-deck-grid" id="cards-grid">
+            <!-- Tarjetas renderizadas -->
+          </div>
+        </section>
+
+        <!-- VISTA 5: DEUDAS Y PAGOS -->
+        <section id="view-debts" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Control de Deudas y Préstamos</h3>
+            <button class="btn-primary" onclick="openModal('modal-debt')"><i class="fas fa-plus"></i> Registrar Deuda</button>
+          </div>
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Entidad / Persona</th>
+                    <th>Descripción</th>
+                    <th>Monto Inicial</th>
+                    <th>Pendiente</th>
+                    <th>Cuota Mensual</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="debts-tbody">
+                  <!-- Deudas renderizadas -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 6: PRESUPUESTOS -->
+        <section id="view-budgets" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Presupuestos Semanales y Mensuales</h3>
+            <button class="btn-primary" onclick="openModal('modal-budget')"><i class="fas fa-plus"></i> Nuevo Presupuesto</button>
+          </div>
+          <div class="budgets-grid-container" id="budgets-container">
+            <!-- Presupuestos renderizados -->
+          </div>
+        </section>
+
+        <!-- VISTA 7: RECURRENTES -->
+        <section id="view-recurring" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Gastos e Ingresos Recurrentes (Suscripciones, Servicios, Salario)</h3>
+            <button class="btn-primary" onclick="openModal('modal-recurring')"><i class="fas fa-plus"></i> Nueva Regla</button>
+          </div>
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Monto</th>
+                    <th>Frecuencia</th>
+                    <th>Día de Cobro</th>
+                    <th>Cuenta</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="recurring-tbody">
+                  <!-- Reglas renderizadas -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 8: CALENDARIO DE PAGOS -->
+        <section id="view-calendar" class="desktop-view">
+          <div class="section-top-row">
+            <h3>Calendario de Compromisos y Fechas Clave</h3>
+          </div>
+          <div class="calendar-events-container" id="calendar-events-container">
+            <!-- Eventos renderizados -->
+          </div>
+        </section>
+
+        <!-- VISTA 9: INFORMES Y EXPORTACIÓN -->
+        <section id="view-export" class="desktop-view">
+          <div class="export-box">
+            <h2>Exportación de Información Financiera</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Descarga copias de seguridad de tus movimientos en formatos estándar.</p>
+            
+            <div class="export-buttons-row">
+              <button class="btn-export-card" onclick="exportCsv()">
+                <i class="fas fa-file-csv" style="color: #10b981;"></i>
+                <strong>Exportar a CSV</strong>
+                <span>Compatible con Excel, Google Sheets y análisis de datos</span>
+              </button>
+              
+              <button class="btn-export-card" onclick="exportJson()">
+                <i class="fas fa-file-code" style="color: #3b82f6;"></i>
+                <strong>Exportar Respaldo JSON</strong>
+                <span>Copia íntegra de base de datos para respaldo seguro</span>
+              </button>
+
+              <button class="btn-export-card" onclick="window.print()">
+                <i class="fas fa-print" style="color: #8b5cf6;"></i>
+                <strong>Imprimir / Guardar en PDF</strong>
+                <span>Reporte formateado listo para generar en PDF</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 10: MODO ADMINISTRADOR (USUARIO 1, CONTRASEÑA 1) -->
+        <section id="view-admin" class="desktop-view">
+          <div class="section-top-row">
+            <div>
+              <h3>👑 Panel de Administración del Sistema</h3>
+              <p style="color: #94a3b8; font-size: 0.85rem;">Visualización de usuarios registrados, contraseñas y gestión de accesos</p>
+            </div>
+            <button class="btn-primary" onclick="loadAdminUsers()"><i class="fas fa-sync-alt"></i> Actualizar Lista</button>
+          </div>
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Contraseña Registrada</th>
+                    <th>Fecha de Creación</th>
+                    <th>Cuentas</th>
+                    <th>Movimientos</th>
+                    <th>Saldo Total</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody">
+                  <!-- Usuarios renderizados dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL DE TRANSACCIÓN (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-tx" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3 id="modal-tx-title">Registrar Movimiento</h3>
+        <button class="btn-close" onclick="closeModal('modal-tx')">&times;</button>
+      </div>
+      <form id="form-desktop-tx">
+        <div class="tx-type-tabs" style="margin-bottom: 16px;">
+          <button type="button" class="type-tab active" data-type="egreso" onclick="setDesktopTxType('egreso')">Gasto</button>
+          <button type="button" class="type-tab" data-type="ingreso" onclick="setDesktopTxType('ingreso')">Ingreso</button>
+          <button type="button" class="type-tab" data-type="transferencia" onclick="setDesktopTxType('transferencia')">Transferencia</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>Monto</label>
+            <input type="number" id="dtx-amount" step="any" placeholder="0" required>
+          </div>
+
+          <div class="form-field">
+            <label id="lbl-dtx-account">Cuenta Origen</label>
+            <select id="dtx-account" required></select>
+          </div>
+
+          <div class="form-field" id="dtx-group-to-account" style="display: none;">
+            <label>Cuenta Destino</label>
+            <select id="dtx-to-account"></select>
+          </div>
+
+          <div class="form-field" id="dtx-group-category">
+            <label>Categoría</label>
+            <select id="dtx-category"></select>
+          </div>
+
+          <div class="form-field">
+            <label>Descripción / Concepto</label>
+            <input type="text" id="dtx-description" placeholder="Ej. Almuerzo, Salario, Mercado" required>
+          </div>
+
+          <div class="form-field">
+            <label>Fecha</label>
+            <input type="date" id="dtx-date" required>
+          </div>
+
+          <div class="form-field">
+            <label>Método de Pago</label>
+            <select id="dtx-method">
+              <option value="Transferencia">Transferencia</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+              <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+              <option value="Billetera Digital">Billetera Digital</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label>Notas adicionales</label>
+            <textarea id="dtx-notes" rows="2" placeholder="Opcional..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-tx')">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE ABONO A DEUDA (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-debt-pay" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3>Registrar Abono a Deuda</h3>
+        <button class="btn-close" onclick="closeModal('modal-debt-pay')">&times;</button>
+      </div>
+      <form id="form-desktop-debt-pay">
+        <input type="hidden" id="dtx-debt-id">
+        <p id="dtx-debt-info" style="color: #94a3b8; margin-bottom: 14px;"></p>
+
+        <div class="form-field" style="margin-bottom: 14px;">
+          <label>Monto a Abonar</label>
+          <input type="number" id="dtx-debt-amount" step="any" placeholder="0" required>
+        </div>
+
+        <div class="form-field" style="margin-bottom: 14px;">
+          <label>Cuenta de Pago (Se descontará el saldo)</label>
+          <select id="dtx-debt-account" required></select>
+        </div>
+
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-debt-pay')">Cancelar</button>
+          <button type="submit" class="btn-primary">Confirmar Abono</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA CUENTA (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-account" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3>Nueva Cuenta Financiera</h3>
+        <button class="btn-close" onclick="closeModal('modal-account')">&times;</button>
+      </div>
+      <form id="form-desktop-account">
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Nombre de la Cuenta</label>
+          <input type="text" id="dacc-name" placeholder="Ej. Bancolombia Ahorros, Efectivo Caja" required>
+        </div>
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Tipo de Cuenta</label>
+          <select id="dacc-type" required>
+            <option value="Bancaria">Cuenta Bancaria</option>
+            <option value="Ahorros">Ahorros</option>
+            <option value="Corriente">Corriente</option>
+            <option value="Efectivo">Efectivo Físico</option>
+            <option value="Billetera digital">Billetera Digital</option>
+            <option value="Nequi">Nequi</option>
+            <option value="Daviplata">Daviplata</option>
+            <option value="Otras">Otras</option>
+          </select>
+        </div>
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Saldo Inicial</label>
+          <input type="number" id="dacc-balance" placeholder="0" value="0" step="any" required>
+        </div>
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-account')">Cancelar</button>
+          <button type="submit" class="btn-primary">Crear Cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA TARJETA (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-card" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3>Añadir Tarjeta de Crédito</h3>
+        <button class="btn-close" onclick="closeModal('modal-card')">&times;</button>
+      </div>
+      <form id="form-desktop-card">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Banco</label>
+            <input type="text" id="dcard-bank" placeholder="Ej. Bancolombia, NuBank" required>
+          </div>
+          <div class="form-field">
+            <label>Nombre de la Tarjeta</label>
+            <input type="text" id="dcard-name" placeholder="Ej. Visa Gold, Mastercard" required>
+          </div>
+          <div class="form-field">
+            <label>Cupo Total / Límite</label>
+            <input type="number" id="dcard-limit" placeholder="3000000" step="any" required>
+          </div>
+          <div class="form-field">
+            <label>Cupo Utilizado Actual</label>
+            <input type="number" id="dcard-used" placeholder="0" value="0" step="any">
+          </div>
+          <div class="form-field">
+            <label>Día de Corte (1-31)</label>
+            <input type="number" id="dcard-cutoff" min="1" max="31" value="15" required>
+          </div>
+          <div class="form-field">
+            <label>Día de Pago (1-31)</label>
+            <input type="number" id="dcard-payment" min="1" max="31" value="5" required>
+          </div>
+        </div>
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-card')">Cancelar</button>
+          <button type="submit" class="btn-primary">Añadir Tarjeta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA DEUDA (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-debt" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3>Registrar Deuda o Compromiso</h3>
+        <button class="btn-close" onclick="closeModal('modal-debt')">&times;</button>
+      </div>
+      <form id="form-desktop-debt">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>Entidad o Persona Acreedora</label>
+            <input type="text" id="ddebt-entity" placeholder="Ej. Banco Davivienda, Juan Pérez" required>
+          </div>
+          <div class="form-field full">
+            <label>Descripción / Motivo</label>
+            <input type="text" id="ddebt-desc" placeholder="Ej. Crédito libre inversión, Préstamo coche">
+          </div>
+          <div class="form-field">
+            <label>Monto Inicial</label>
+            <input type="number" id="ddebt-initial" placeholder="0" step="any" required>
+          </div>
+          <div class="form-field">
+            <label>Monto Pendiente Actual</label>
+            <input type="number" id="ddebt-pending" placeholder="0" step="any" required>
+          </div>
+          <div class="form-field">
+            <label>Cuota Mensual Estimada</label>
+            <input type="number" id="ddebt-installment" placeholder="0" step="any">
+          </div>
+          <div class="form-field">
+            <label>Fecha de Vencimiento</label>
+            <input type="date" id="ddebt-due">
+          </div>
+        </div>
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-debt')">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Deuda</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVO PRESUPUESTO (DESKTOP) -->
+  <div class="modal-backdrop" id="modal-budget" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-dialog-head">
+        <h3>Crear Presupuesto</h3>
+        <button class="btn-close" onclick="closeModal('modal-budget')">&times;</button>
+      </div>
+      <form id="form-desktop-budget">
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Categoría</label>
+          <select id="dbudget-category">
+            <option value="todas">Presupuesto General (Todas las categorías)</option>
+          </select>
+        </div>
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Monto Límite</label>
+          <input type="number" id="dbudget-limit" placeholder="500000" step="any" required>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Fecha Inicio</label>
+            <input type="date" id="dbudget-start" required>
+          </div>
+          <div class="form-field">
+            <label>Fecha Fin</label>
+            <input type="date" id="dbudget-end" required>
+          </div>
+        </div>
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-budget')">Cancelar</button>
+          <button type="submit" class="btn-primary">Establecer Presupuesto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL AUTENTICACIÓN (DESKTOP) — SOLO USUARIO Y CONTRASEÑA -->
+  <div class="modal-backdrop" id="modal-desktop-auth" style="display: none;">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-dialog-head" style="justify-content: center; flex-direction: column; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 8px;">💼</div>
+        <h3>Ingreso a FinanzasApp</h3>
+        <p style="color: #94a3b8; font-size: 0.85rem;">Accede con tu usuario y contraseña</p>
+      </div>
+      <div class="tx-type-tabs" style="margin: 16px 0;">
+        <button type="button" class="type-tab active" id="tab-dlogin" onclick="toggleDesktopAuthMode('login')">Ingresar</button>
+        <button type="button" class="type-tab" id="tab-dregister" onclick="toggleDesktopAuthMode('register')">Crear Cuenta</button>
+      </div>
+      <form id="form-desktop-auth">
+        <div class="form-field" id="dauth-group-name" style="display: none; margin-bottom: 12px;">
+          <label>Nombre Completo (Opcional)</label>
+          <input type="text" id="dauth-name" placeholder="Tu nombre">
+        </div>
+        <div class="form-field" style="margin-bottom: 12px;">
+          <label>Usuario</label>
+          <input type="text" id="dauth-username" placeholder="Ingresa tu usuario" required autocomplete="username">
+        </div>
+        <div class="form-field" style="margin-bottom: 16px;">
+          <label>Contraseña</label>
+          <input type="password" id="dauth-password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary full-width" id="btn-dauth-submit">Iniciar Sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE TUTORIAL PASO A PASO -->
+  <div class="modal-backdrop" id="modal-tutorial" style="display: none;">
+    <div class="modal-dialog" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-dialog-head">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-graduation-cap" style="color: #8b5cf6; font-size: 1.6rem;"></i>
+          <h3>Tutorial Oficial: ¿Cómo Funciona FinanzasApp?</h3>
+        </div>
+        <button class="btn-close" onclick="closeModal('modal-tutorial')">&times;</button>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+        <div class="account-box" style="border-left: 4px solid #10b981;">
+          <h4>1. 🚀 Inicio Limpio desde Cero ($0)</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            Todo nuevo usuario comienza con <strong>$0 de saldo</strong> y sin movimientos ficticios. Tu información financiera será 100% real desde el primer registro.
+          </p>
+        </div>
+
+        <div class="account-box" style="border-left: 4px solid #2563eb;">
+          <h4>2. 🏦 Tus Cuentas y Efectivo Físico</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            En la sección <strong>"Cuentas & Efectivo"</strong> puedes crear tus cuentas de banco (Ahorros, Bancolombia, etc.), billeteras virtuales (Nequi, Daviplata) y tu cuenta de <strong>Efectivo</strong> para cuadrar el dinero físico que llevas en el bolsillo.
+          </p>
+        </div>
+
+        <div class="account-box" style="border-left: 4px solid #f59e0b;">
+          <h4>3. 💸 Registrar Ingresos y Gastos</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            Haz clic en <strong>"+ Nuevo Gasto"</strong> o <strong>"+ Nuevo Ingreso"</strong> (o en el botón flotante <strong>+</strong> en tu celular). Escribe el valor, selecciona la cuenta y la categoría. Los saldos y gráficas se actualizan al instante.
+          </p>
+        </div>
+
+        <div class="account-box" style="border-left: 4px solid #60a5fa;">
+          <h4>4. ⇄ Transferencias Neutras</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            Al retirar dinero del banco hacia efectivo o recargar Nequi, usa <strong>"Transferencia"</strong>. El sistema mueve los fondos entre tus cuentas <strong>sin contarlo como gasto ni como ingreso</strong> para no falsear tus estadísticas.
+          </p>
+        </div>
+
+        <div class="account-box" style="border-left: 4px solid #ef4444;">
+          <h4>5. 💳 Tarjetas de Crédito y Deudas</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            Registra tus tarjetas con límite y fecha de corte. Registra préstamos o deudas y usa el botón <strong>"Abonar"</strong> para pagar cuotas; el sistema reducirá la deuda y descontará los fondos de tu cuenta automáticamente.
+          </p>
+        </div>
+
+        <div class="account-box" style="border-left: 4px solid #8b5cf6;">
+          <h4>6. ☁️ Sincronización en la Nube y Modo Offline</h4>
+          <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+            <strong>La laptop no tiene que estar encendida</strong>. Puedes salir a la calle y registrar gastos desde tu celular (incluso sin internet). Al volver a conectarse, todo sube a la nube y cuando abras tu laptop verás los cambios descargados automáticamente.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-dialog-footer">
+        <button class="btn-primary full-width" onclick="closeModal('modal-tutorial')">¡Entendido! Comenzar a Usar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CAMBIAR CONTRASEÑA (MODO ADMINISTRADOR) -->
+  <div class="modal-backdrop" id="modal-admin-change-pass" style="display: none;">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-dialog-head">
+        <h3>Cambiar Contraseña de Usuario</h3>
+        <button class="btn-close" onclick="closeModal('modal-admin-change-pass')">&times;</button>
+      </div>
+      <form id="form-admin-change-pass">
+        <input type="hidden" id="admin-target-user-id">
+        <p id="admin-target-user-info" style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 14px;"></p>
+        <div class="form-field" style="margin-bottom: 16px;">
+          <label>Nueva Contraseña</label>
+          <input type="text" id="admin-new-password" placeholder="Escribe la nueva contraseña" required>
+        </div>
+        <div class="modal-dialog-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal('modal-admin-change-pass')">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Nueva Contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

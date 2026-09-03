@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: finanzas-app
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finanzas-db
+          property: connectionString
+
+databases:
+  - name: finanzas-db
+    plan: free
+    databaseName: finanzas_db
+    user: finanzas_user
+    region: oregon

@@ -1,0 +1,108 @@
+{
+  "users": [
+    {
+      "id": "admin-master-001",
+      "username": "1",
+      "name": "Administrador",
+      "password_hash": "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+      "plain_password": "1",
+      "role": "admin",
+      "currency": "COP",
+      "created_at": "2026-09-02T18:00:00.000Z",
+      "updated_at": "2026-09-02T18:00:00.000Z",
+      "is_deleted": false
+    },
+    {
+      "id": "da4fa2ef-027d-4b2e-8fce-8d76c3122aa5",
+      "username": "2",
+      "name": "Gabriel",
+      "password_hash": "$2a$10$QFDvrvEBvWmiS/1X4UIGQubU.NQHZS0LuLxpmyReVv1fJkMeDG3Pe",
+      "plain_password": "2",
+      "role": "user",
+      "currency": "COP",
+      "created_at": "2026-09-02T23:59:56.733Z",
+      "updated_at": "2026-09-02T23:59:56.733Z",
+      "is_deleted": false
+    }
+  ],
+  "accounts": [
+    {
+      "id": "d9740527-d73f-43be-9832-fbae26432066",
+      "user_id": "da4fa2ef-027d-4b2e-8fce-8d76c3122aa5",
+      "name": "Efectivo",
+      "type": "Efectivo",
+      "balance": 0,
+      "currency": "COP",
+      "color": "#10b981",
+      "icon": "money-bill-wave",
+      "created_at": "2026-09-02T23:59:56.734Z",
+      "updated_at": "2026-09-02T23:59:56.734Z",
+      "is_deleted": false
+    },
+    {
+      "id": "40b4d698-dcd7-4326-bf9d-dfe53fdd270b",
+      "user_id": "da4fa2ef-027d-4b2e-8fce-8d76c3122aa5",
+      "name": "Cuenta Bancaria",
+      "type": "Bancaria",
+      "balance": 0,
+      "currency": "COP",
+      "color": "#2563eb",
+      "icon": "landmark",
+      "created_at": "2026-09-02T23:59:56.734Z",
+      "updated_at": "2026-09-02T23:59:56.734Z",
+      "is_deleted": false
+    },
+    {
+      "id": "88efefb1-3e47-4c9b-ac7b-61bbc5c68410",
+      "user_id": "da4fa2ef-027d-4b2e-8fce-8d76c3122aa5",
+      "name": "Billetera Digital",
+      "type": "Nequi",
+      "balance": 0,
+      "currency": "COP",
+      "color": "#8b5cf6",
+      "icon": "mobile-alt",
+      "created_at": "2026-09-02T23:59:56.735Z",
+      "updated_at": "2026-09-02T23:59:56.735Z",
+      "is_deleted": false
+    }
+  ],
+  "categories": [],
+  "transactions": [
+    {
+      "id": "553a904e-5a59-4848-8a0c-4c88727f7a1c",
+      "user_id": "3345d450-50f8-4a69-86b6-0903f0f5bc0b",
+      "account_id": "ad255d9f-90a1-497a-aa7b-3b78d3d6658f",
+      "to_account_id": null,
+      "type": "egreso",
+      "amount": 5,
+      "category": "Gasolina",
+      "description": "F",
+      "payment_method": "Efectivo",
+      "date": "2026-09-02",
+      "time": "18:52:08",
+      "device_id": "mobile-c7834554",
+      "sync_status": "synced",
+      "is_deleted": false,
+      "created_at": "2026-09-02T23:52:08.949Z",
+      "updated_at": "2026-09-02T23:52:08.949Z"
+    }
+  ],
+  "credit_cards": [],
+  "debts": [],
+  "debt_payments": [],
+  "budgets": [],
+  "recurring_rules": [],
+  "sync_logs": [
+    {
+      "id": "62b1191d-ee77-4803-b3a4-e9699035f450",
+      "user_id": "3345d450-50f8-4a69-86b6-0903f0f5bc0b",
+      "device_id": "mobile-c7834554",
+      "sync_direction": "push",
+      "entities_count": 1,
+      "synced_at": "2026-09-02T23:57:46.854Z",
+      "created_at": "2026-09-02T23:57:46.859Z",
+      "updated_at": "2026-09-02T23:57:46.859Z",
+      "is_deleted": false
+    }
+  ]
+}
