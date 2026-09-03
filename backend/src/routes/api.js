@@ -13,9 +13,10 @@ const syncController = require('../controllers/syncController');
 const reportController = require('../controllers/reportController');
 const adminController = require('../controllers/adminController');
 
-// 1. Rutas Públicas de Autenticación
+// 1. Rutas Públicas de Autenticación y Estado
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
+router.get('/system/maintenance', adminController.getMaintenance);
 
 // Todas las rutas siguientes requieren Token JWT
 router.use(authMiddleware);

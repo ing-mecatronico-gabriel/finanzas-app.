@@ -12,6 +12,9 @@
   
   <!-- Iconos Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- SheetJS para importación de Excel / CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   
   <!-- Hojas de Estilo Modulares -->
   <link rel="stylesheet" href="css/styles.css">
@@ -20,6 +23,27 @@
   <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
+
+  <!-- ==========================================================
+       PANTALLA COMPLETA DE BLOQUEO POR MODO MANTENIMIENTO
+       ========================================================== -->
+  <div id="maintenance-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); z-index: 999999; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center;">
+    <div style="background: var(--bg-card); border: 1px solid #f59e0b; border-radius: 20px; padding: 36px 28px; max-width: 440px; box-shadow: 0 25px 50px rgba(0,0,0,0.6);">
+      <div style="font-size: 3.5rem; margin-bottom: 14px;">🚧</div>
+      <h2 style="color: #fbbf24; margin: 0 0 10px 0; font-size: 1.4rem;">Sistema en Mantenimiento</h2>
+      <p id="maintenance-message" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px;">
+        Estamos realizando mejoras en el sistema. Volveremos en unos momentos. ¡Gracias por tu paciencia!
+      </p>
+      <button class="btn-primary-action btn-interactive" style="background: #334155; border: 1px solid #475569; width: 100%; justify-content: center;" onclick="location.reload()">
+        <i class="fas fa-sync-alt"></i> Reintentar Conexión
+      </button>
+      <div style="margin-top: 20px;">
+        <a href="#" onclick="openModal('modal-auth'); document.getElementById('maintenance-overlay').style.display='none';" style="font-size: 0.8rem; color: #94a3b8; text-decoration: underline;">
+          ¿Eres Administrador? Inicia sesión aquí
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- Indicador Pull to Refresh (Móvil) -->
   <div id="mobile-pull-indicator" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; z-index: 9999; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); color: var(--brand-blue); transition: opacity 0.2s;">
@@ -76,6 +100,12 @@
             <span class="sidebar-label">Reportes</span>
           </button>
         </li>
+        <li class="sidebar-item admin-only-btn" style="display: none;">
+          <button class="sidebar-btn" onclick="openAdminPanel()" style="color: #fbbf24;">
+            <i class="fas fa-user-shield"></i>
+            <span class="sidebar-label">Panel Admin</span>
+          </button>
+        </li>
         <li class="sidebar-item">
           <button class="sidebar-btn" data-view="settings">
             <i class="fas fa-cog"></i>
@@ -104,11 +134,16 @@
         </div>
 
         <div class="header-actions">
-          <!-- Buscador -->
-          <div class="header-search-bar">
-            <i class="fas fa-search" style="color: var(--text-muted);"></i>
-            <input type="text" placeholder="Buscar movimientos..." onfocus="switchView('transactions')">
-          </div>
+          <!-- Botón Importar Excel -->
+          <button class="btn-secondary btn-interactive" onclick="openModal('modal-import-excel')" title="Importar Excel o CSV" style="padding: 7px 14px; font-size: 0.8rem; border-radius: var(--radius-pill); display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-file-excel" style="color: #10B981;"></i>
+            <span>Importar Excel</span>
+          </button>
+
+          <!-- Botón Panel Admin (Solo Admin) -->
+          <button class="header-icon-btn btn-interactive admin-only-btn" onclick="openAdminPanel()" title="Panel de Administrador" style="display: none; color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">
+            <i class="fas fa-user-shield"></i>
+          </button>
 
           <!-- Píldora de Notificaciones -->
           <button class="header-icon-btn btn-interactive" title="Notificaciones">
@@ -123,7 +158,7 @@
           <!-- Perfil de Usuario -->
           <div class="header-user-pill btn-interactive" onclick="switchView('settings')">
             <div class="user-avatar" id="user-avatar-initials">GA</div>
-            <span class="user-name-text">Gabriel M.</span>
+            <span class="user-name-text" id="user-pill-name">Gabriel</span>
             <i class="fas fa-chevron-down" style="font-size: 0.65rem; color: var(--text-muted);"></i>
           </div>
         </div>
@@ -139,12 +174,12 @@
         <!-- Fila Superior: Balance Total + Mis Cuentas Pastel -->
         <div class="overview-top-row">
           
-          <!-- TARJETA DE BALANCE PRINCIPAL (CON GRÁFICA VECTORIAL INTERACTIVA) -->
+          <!-- TARJETA DE BALANCE PRINCIPAL (INICIA EN $0 REAL) -->
           <div class="portfolio-card tilt-card shine-effect stagger-1">
             <div>
               <div class="portfolio-card-head">
                 <span class="portfolio-label">Balance Total</span>
-                <span class="portfolio-badge-gain">+12,4% este mes</span>
+                <span class="portfolio-badge-gain">0% este mes</span>
               </div>
               <div class="portfolio-amount" id="portfolio-total-balance">$ 0</div>
               <div class="portfolio-sub">Patrimonio neto disponible</div>
@@ -166,7 +201,7 @@
             </div>
           </div>
 
-          <!-- SECCIÓN: MIS CUENTAS (TARJETAS PASTEL HORIZONTALES CON 3D TILT) -->
+          <!-- SECCIÓN: MIS CUENTAS (INICIAN EN $0) -->
           <div class="assets-section-card stagger-2">
             <div class="section-subhead">
               <h3>Mis cuentas</h3>
@@ -195,7 +230,7 @@
             </ul>
           </div>
 
-          <!-- TARJETA: CONTROL DE PRESUPUESTOS Y AHORRO (REEMPLAZO PROFESIONAL DE IA) -->
+          <!-- TARJETA: CONTROL Y PRESUPUESTOS -->
           <div class="activity-card shine-effect stagger-3" id="overview-budget-widget" style="padding: 24px;">
             <!-- Renderizado dinámico desde dashboard.js -->
           </div>
@@ -340,20 +375,35 @@
            ========================================================== -->
       <section id="view-settings" class="view-section">
         <div class="activity-card" style="max-width: 600px; margin-bottom: 20px;">
-          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Perfil de Usuario</h4>
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Perfil y Ajustes</h4>
           <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
             <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem;">GA</div>
             <div>
-              <h3 style="font-size: 1.2rem; font-weight: 800;">Gabriel M.</h3>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">Usuario Activo</span>
+              <h3 style="font-size: 1.2rem; font-weight: 800;" id="settings-user-fullname">Gabriel</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);" id="settings-user-role">Usuario Activo</span>
             </div>
           </div>
+
+          <!-- Sección de Administrador dentro de ajustes si corresponde -->
+          <div class="admin-only-btn" style="display: none; margin-bottom: 18px;">
+            <button class="btn-primary-action btn-interactive" onclick="openAdminPanel()" style="background: #f59e0b; width: 100%; justify-content: center;">
+              <i class="fas fa-users-cog"></i> Abrir Panel de Administrador
+            </button>
+          </div>
+
           <div style="border-top: 1px solid var(--border-light); padding-top: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
               <span>Tema de la aplicación:</span>
               <button class="btn-secondary btn-interactive" data-action="toggle-theme" style="width: auto; padding: 6px 14px;">
                 <i class="fas fa-moon theme-icon-indicator"></i>
                 <span class="theme-label-indicator">Modo Oscuro</span>
+              </button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-light);">
+              <span>Sesión actual:</span>
+              <button class="btn-secondary btn-interactive" onclick="handleLogout()" style="width: auto; padding: 6px 14px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
               </button>
             </div>
           </div>
@@ -404,6 +454,120 @@
       </button>
     </nav>
 
+  </div>
+
+  <!-- ==========================================================
+       MODAL DE INICIO DE SESIÓN / REGISTRO (SOLO USUARIO Y CONTRASEÑA)
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-auth">
+    <div class="modal-box" style="max-width: 420px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 52px; height: 52px; border-radius: 14px; background: var(--brand-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 12px auto; font-weight: 800;">
+          B
+        </div>
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Bienvenido a FinanzasApp</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Accede con tu usuario y contraseña (sin correo)</p>
+      </div>
+
+      <div class="type-segmented-control" style="margin-bottom: 20px;">
+        <button type="button" class="segment-btn active" id="auth-tab-login" onclick="setAuthMode('login')">Ingresar</button>
+        <button type="button" class="segment-btn" id="auth-tab-register" onclick="setAuthMode('register')">Registrarse</button>
+      </div>
+
+      <form id="form-auth-modal">
+        <div class="form-group" id="auth-group-name" style="display: none;">
+          <label>Nombre Completo (Opcional)</label>
+          <input type="text" id="auth-input-name" class="form-control" placeholder="Ej: Gabriel">
+        </div>
+
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="auth-input-username" class="form-control" placeholder="Ingresa tu usuario" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="auth-input-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-primary-action btn-interactive" id="btn-auth-submit" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">
+          Iniciar Sesión
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: PANEL DE ADMINISTRADOR (USUARIO 1, CLAVE 1)
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-admin-panel">
+    <div class="modal-box" style="max-width: 560px;">
+      <div class="modal-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-user-shield" style="color: #fbbf24; font-size: 1.25rem;"></i>
+          <h3>Panel de Administrador</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-admin-panel')">&times;</button>
+      </div>
+
+      <!-- Control de Modo Mantenimiento -->
+      <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 14px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: #fbbf24; font-size: 0.95rem; display: block;">🚧 Modo Mantenimiento</strong>
+            <span id="admin-maintenance-status-label" style="font-size: 0.8rem; color: var(--text-secondary);">Actualmente: Desactivado</span>
+          </div>
+          <button id="btn-toggle-maintenance-action" class="btn-primary-action btn-interactive" style="background: #f59e0b; padding: 8px 16px; font-size: 0.82rem;" onclick="toggleMaintenanceMode()">
+            Activar Mantenimiento
+          </button>
+        </div>
+      </div>
+
+      <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px;">Usuarios Registrados en el Sistema:</h4>
+      <div id="admin-users-list-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;">
+        <!-- Inyectado por app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       MODAL: IMPORTAR EXCEL O CSV
+       ========================================================== -->
+  <div class="modal-overlay" id="modal-import-excel">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-file-excel" style="color: #10B981; font-size: 1.25rem;"></i>
+          <h3>Importar Excel o CSV</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-import-excel')">&times;</button>
+      </div>
+
+      <div onclick="document.getElementById('excel-file-input').click()" style="border: 2px dashed #10B981; background: rgba(16, 185, 129, 0.08); border-radius: 14px; padding: 26px 20px; text-align: center; cursor: pointer; transition: background 0.2s;">
+        <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #10B981; margin-bottom: 8px;"></i>
+        <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Selecciona tu archivo Excel</h4>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Compatible con .xlsx, .xls y .csv (Mapeo automático de columnas)</p>
+        <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileSelected(event)">
+      </div>
+
+      <div id="excel-step-preview" style="display: none; margin-top: 18px;">
+        <div class="form-group">
+          <label>Cuenta de Destino</label>
+          <select id="excel-target-account" class="form-control"></select>
+        </div>
+
+        <div style="background: var(--bg-input); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem;">
+          Se detectaron <strong id="excel-preview-count" style="color: #10B981;">0</strong> transacciones válidas listas para importar.
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-import-excel')">Cancelar</button>
+          <button type="button" class="btn-primary-action btn-interactive" style="background: #10B981;" onclick="submitExcelImport()">
+            Confirmar e Importar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ==========================================================
@@ -487,7 +651,7 @@
         </div>
         <div class="form-group">
           <label>Saldo Inicial ($)</label>
-          <input type="number" id="acc-new-balance" class="form-control" placeholder="0" step="any">
+          <input type="number" id="acc-new-balance" class="form-control" placeholder="0" value="0" step="any">
         </div>
         <div class="form-group">
           <label>Estilo Visual Pastel</label>
@@ -581,7 +745,7 @@
         </div>
         <div class="form-group">
           <label>Ahorro Inicial Acumulado ($)</label>
-          <input type="number" id="goal-new-initial" class="form-control" placeholder="0" step="any">
+          <input type="number" id="goal-new-initial" class="form-control" placeholder="0" value="0" step="any">
         </div>
         <div class="form-group">
           <label>Color Distintivo</label>

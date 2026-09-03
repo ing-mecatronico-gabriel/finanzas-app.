@@ -1,19 +1,10 @@
 /**
  * FINANZASAPP — MÓDULO DASHBOARD / OVERVIEW
- * Balance total con animación numérica progresiva, gráfica interactiva SVG y tarjetas pastel
+ * Balance total real (inicia en $0), gráfica SVG animada y cuentas reales sin datos ficticios
  */
 
 const DashboardModule = {
   activePeriod: '1M',
-
-  chartDataByPeriod: {
-    '1D': [18200000, 18250000, 18320000, 18300000, 18380000, 18450000],
-    '1S': [17800000, 17950000, 18100000, 18050000, 18220000, 18350000, 18450000],
-    '1M': [16400000, 16900000, 16750000, 17300000, 17150000, 17850000, 18200000, 18450000],
-    '6M': [14200000, 15100000, 15800000, 16500000, 17400000, 18450000],
-    '1A': [11500000, 12800000, 14200000, 15600000, 16800000, 18450000],
-    'TODO': [8500000, 10200000, 12800000, 15300000, 17200000, 18450000]
-  },
 
   init() {
     this.bindPeriodButtons();
@@ -28,19 +19,17 @@ const DashboardModule = {
   },
 
   renderBalanceCard() {
-    // Calcular saldo total a partir de las cuentas
+    // Calcular saldo total a partir de las cuentas reales del usuario
     const total = AppState.accounts
       .filter(a => !a.is_deleted)
       .reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
 
-    const finalAmount = total > 0 ? total : 18450000;
-
-    // Animar interpolación numérica con easeOutCubic
+    // Animar interpolación numérica desde 0 hasta el saldo real
     if (window.MotionSystem && window.MotionSystem.animateBalance) {
-      window.MotionSystem.animateBalance(finalAmount);
+      window.MotionSystem.animateBalance(total);
     } else {
       const amountEl = document.getElementById('portfolio-total-balance');
-      if (amountEl) amountEl.textContent = formatCurrency(finalAmount);
+      if (amountEl) amountEl.textContent = formatCurrency(total);
     }
 
     this.renderSvgChart();
@@ -59,7 +48,23 @@ const DashboardModule = {
   },
 
   renderSvgChart() {
-    const points = this.chartDataByPeriod[this.activePeriod] || this.chartDataByPeriod['1M'];
+    // Generar puntos basados en los movimientos reales
+    let points = [0, 0, 0, 0, 0, 0];
+
+    const activeTx = AppState.transactions.filter(t => !t.is_deleted);
+    if (activeTx.length > 0) {
+      let runningTotal = 0;
+      const history = [...activeTx].reverse().map(t => {
+        if (t.type === 'ingreso') runningTotal += parseFloat(t.amount);
+        if (t.type === 'gasto' || t.type === 'egreso') runningTotal -= parseFloat(t.amount);
+        return runningTotal;
+      });
+      if (history.length < 6) {
+        while (history.length < 6) history.unshift(0);
+      }
+      points = history.slice(-6);
+    }
+
     if (window.MotionSystem && window.MotionSystem.renderAnimatedSvgChart) {
       window.MotionSystem.renderAnimatedSvgChart('portfolio-chart-container', points, this.activePeriod);
     }
@@ -71,19 +76,24 @@ const DashboardModule = {
 
     const activeAccounts = AppState.accounts.filter(a => !a.is_deleted);
     const defaultStyles = ['principal', 'ahorros', 'efectivo'];
-    const defaultIcons = ['landmark', 'piggy-bank', 'wallet'];
+    const defaultIcons = ['wallet', 'landmark', 'mobile-screen'];
+
+    if (activeAccounts.length === 0) {
+      grid.innerHTML = `<div style="color: var(--text-muted); padding: 12px;">No tienes cuentas activas.</div>`;
+      return;
+    }
 
     grid.innerHTML = activeAccounts.map((acc, idx) => {
       const styleClass = acc.styleClass || defaultStyles[idx % defaultStyles.length];
       const icon = acc.icon || defaultIcons[idx % defaultIcons.length];
-      const change = acc.change || (idx === 0 ? '+8.2%' : (idx === 1 ? '+4.1%' : '+0.27%'));
+      const change = acc.change || '0%';
       const staggerClass = `stagger-${Math.min(idx + 1, 6)}`;
 
       return `
         <div class="account-pastel-card ${styleClass} tilt-card shine-effect ${staggerClass}" onclick="DashboardModule.filterByAccount('${acc.id}')" title="Ver movimientos de esta cuenta">
           <div class="acc-card-top-info">
             <h4>${acc.name}</h4>
-            <div class="acc-balance">${formatCurrency(acc.balance)}</div>
+            <div class="acc-balance">${formatCurrency(acc.balance || 0)}</div>
           </div>
           <div class="acc-card-bottom-pill">
             <div class="acc-icon-square">
@@ -95,7 +105,6 @@ const DashboardModule = {
       `;
     }).join('');
 
-    // Re-activar listeners de tilt para las nuevas tarjetas renderizadas
     if (window.MotionSystem && window.MotionSystem.setup3DTilt) {
       window.MotionSystem.setup3DTilt();
     }
@@ -124,7 +133,12 @@ const DashboardModule = {
       .slice(0, 4);
 
     if (sorted.length === 0) {
-      list.innerHTML = `<li style="color: var(--text-muted); padding: 12px; text-align: center;">No hay movimientos recientes.</li>`;
+      list.innerHTML = `
+        <li style="color: var(--text-muted); padding: 24px; text-align: center;">
+          <i class="fas fa-inbox" style="font-size: 1.8rem; margin-bottom: 8px; opacity: 0.5; display: block;"></i>
+          No hay movimientos registrados. ¡Toca (+) para registrar tu primer gasto o ingreso!
+        </li>
+      `;
       return;
     }
 
@@ -161,49 +175,51 @@ const DashboardModule = {
     const container = document.getElementById('overview-budget-widget');
     if (!container) return;
 
-    const catTotals = {};
     let totalExpense = 0;
+    let totalIncome = 0;
     AppState.transactions.forEach(t => {
-      if (t.is_deleted || (t.type !== 'gasto' && t.type !== 'egreso')) return;
+      if (t.is_deleted) return;
       const amt = parseFloat(t.amount) || 0;
-      catTotals[t.category] = (catTotals[t.category] || 0) + amt;
-      totalExpense += amt;
+      if (t.type === 'ingreso') totalIncome += amt;
+      if (t.type === 'gasto' || t.type === 'egreso') totalExpense += amt;
     });
 
-    const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 2);
+    const netSavings = totalIncome - totalExpense;
 
     container.innerHTML = `
       <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
         <div>
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Control de Presupuestos</h4>
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Control y Presupuestos</h4>
             <span style="font-size: 0.75rem; color: var(--brand-blue); font-weight: 700; cursor: pointer;" onclick="switchView('budget')">Ver más &rarr;</span>
           </div>
           
           <div style="margin-bottom: 14px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
-              <span>Alimentación</span>
-              <strong>$ 420.000 / $ 600.000 (70%)</strong>
+              <span>Gastos Totales</span>
+              <strong>${formatCurrency(totalExpense)}</strong>
             </div>
             <div style="width: 100%; height: 8px; background: var(--bg-input); border-radius: 9999px; overflow: hidden;">
-              <div class="progress-animated-bar" style="width: 70%; height: 100%; background: #3B82F6; border-radius: 9999px;"></div>
+              <div class="progress-animated-bar" style="width: ${totalIncome > 0 ? Math.min(100, Math.round((totalExpense/totalIncome)*100)) : (totalExpense > 0 ? 100 : 0)}%; height: 100%; background: #EF4444; border-radius: 9999px;"></div>
             </div>
           </div>
 
           <div style="margin-bottom: 14px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
-              <span>Transporte</span>
-              <strong>$ 180.000 / $ 300.000 (60%)</strong>
+              <span>Ingresos Totales</span>
+              <strong>${formatCurrency(totalIncome)}</strong>
             </div>
             <div style="width: 100%; height: 8px; background: var(--bg-input); border-radius: 9999px; overflow: hidden;">
-              <div class="progress-animated-bar" style="width: 60%; height: 100%; background: #10B981; border-radius: 9999px;"></div>
+              <div class="progress-animated-bar" style="width: ${totalIncome > 0 ? 100 : 0}%; height: 100%; background: #10B981; border-radius: 9999px;"></div>
             </div>
           </div>
         </div>
 
         <div style="padding-top: 14px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.78rem; color: var(--text-secondary);">Ahorro disponible este mes</span>
-          <span style="font-size: 0.95rem; font-weight: 800; color: #10B981;">+ $ 2.558.000</span>
+          <span style="font-size: 0.78rem; color: var(--text-secondary);">Balance Neto del Periodo</span>
+          <span style="font-size: 0.95rem; font-weight: 800; color: ${netSavings >= 0 ? '#10B981' : '#EF4444'};">
+            ${netSavings >= 0 ? '+' : ''}${formatCurrency(netSavings)}
+          </span>
         </div>
       </div>
     `;
