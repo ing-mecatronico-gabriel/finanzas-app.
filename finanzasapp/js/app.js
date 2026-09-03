@@ -1,6 +1,6 @@
 /**
- * FINANZASAPP — NÚCLEO Y ESTADO GLOBAL
- * Arquitectura modular con soporte offline nativo y sincronización automática en la nube
+ * FINANZASAPP — NÚCLEO Y ESTADO GLOBAL (SIN IA)
+ * Arquitectura modular con soporte offline nativo y animaciones fluidas
  */
 
 const API_BASE = window.location.origin + '/api';
@@ -29,14 +29,12 @@ const AppState = {
     role: 'user'
   })),
 
-  // Cuentas por defecto inspiradas en el prototipo fintech
   accounts: JSON.parse(localStorage.getItem('finanzas_accounts') || JSON.stringify([
     { id: 'acc-1', name: 'Cuenta principal', type: 'banco', balance: 12450000, icon: 'landmark', change: '+8.2%', styleClass: 'principal' },
     { id: 'acc-2', name: 'Ahorros', type: 'ahorros', balance: 4250000, icon: 'piggy-bank', change: '+4.1%', styleClass: 'ahorros' },
     { id: 'acc-3', name: 'Efectivo', type: 'efectivo', balance: 1750000, icon: 'wallet', change: '+0.27%', styleClass: 'efectivo' }
   ])),
 
-  // Movimientos recientes fieles al diseño de referencia
   transactions: JSON.parse(localStorage.getItem('finanzas_transactions') || JSON.stringify([
     { id: 'tx-1', description: 'Supermercado Éxito', category: 'Alimentación', type: 'gasto', amount: 85000, date: new Date().toISOString().split('T')[0], account_id: 'acc-1', icon: 'shopping-cart' },
     { id: 'tx-2', description: 'Pago de Salario Quincenal', category: 'Ingreso', type: 'ingreso', amount: 3200000, date: new Date().toISOString().split('T')[0], account_id: 'acc-1', icon: 'arrow-up-right-dots' },
@@ -45,7 +43,6 @@ const AppState = {
     { id: 'tx-5', description: 'Combustible y Gasolina', category: 'Transporte', type: 'gasto', amount: 65000, date: new Date(Date.now() - 259200000).toISOString().split('T')[0], account_id: 'acc-1', icon: 'gas-pump' }
   ])),
 
-  // Presupuestos mensuales
   budgets: JSON.parse(localStorage.getItem('finanzas_budgets') || JSON.stringify([
     { id: 'bg-1', category: 'Alimentación', limit_amount: 600000, icon: 'utensils' },
     { id: 'bg-2', category: 'Transporte', limit_amount: 300000, icon: 'car' },
@@ -53,7 +50,6 @@ const AppState = {
     { id: 'bg-4', category: 'Servicios Públicos', limit_amount: 350000, icon: 'bolt' }
   ])),
 
-  // Metas de ahorro
   goals: JSON.parse(localStorage.getItem('finanzas_goals') || JSON.stringify([
     { id: 'gl-1', title: 'Universidad', current_amount: 2400000, target_amount: 5000000, icon: 'graduation-cap', color: '#8B5CF6' },
     { id: 'gl-2', title: 'Vehículo', current_amount: 8000000, target_amount: 20000000, icon: 'car-side', color: '#3B82F6' },
@@ -71,17 +67,17 @@ const AppState = {
 function switchView(viewName) {
   AppState.currentView = viewName;
 
-  // Actualizar botones de Sidebar
+  // Botones de Sidebar
   document.querySelectorAll('.sidebar-btn').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
   });
 
-  // Actualizar botones de navegación móvil inferior
+  // Botones de navegación móvil
   document.querySelectorAll('.nav-item-btn').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
   });
 
-  // Actualizar visibilidad de secciones
+  // Secciones
   document.querySelectorAll('.view-section').forEach(sec => {
     sec.classList.remove('active');
   });
@@ -91,7 +87,6 @@ function switchView(viewName) {
     targetSec.classList.add('active');
   }
 
-  // Título de la sección en Header
   const titles = {
     overview: 'Overview',
     transactions: 'Movimientos',
@@ -99,7 +94,6 @@ function switchView(viewName) {
     budget: 'Presupuestos',
     goals: 'Metas de Ahorro',
     reports: 'Reportes Financieros',
-    ai: 'Finanzas AI',
     settings: 'Configuración'
   };
 
@@ -108,14 +102,13 @@ function switchView(viewName) {
     headerTitle.textContent = titles[viewName] || 'Overview';
   }
 
-  // Desencadenar re-render de la vista activa
+  // Re-render
   if (viewName === 'overview' && window.DashboardModule) window.DashboardModule.render();
   if (viewName === 'transactions' && window.TransactionsModule) window.TransactionsModule.render();
   if (viewName === 'accounts' && window.AccountsModule) window.AccountsModule.render();
   if (viewName === 'budget' && window.BudgetModule) window.BudgetModule.render();
   if (viewName === 'goals' && window.GoalsModule) window.GoalsModule.render();
   if (viewName === 'reports' && window.ReportsModule) window.ReportsModule.render();
-  if (viewName === 'ai' && window.FinanzasAIModule) window.FinanzasAIModule.render();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -132,15 +125,35 @@ function openModal(modalId) {
 }
 
 function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
+  if (window.closeModalAnimated) {
+    window.closeModalAnimated(modalId);
+  } else {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
   }
 }
 
 // ==========================================================
-// PERSISTENCIA LOCAL Y NUBE
+// ACCIONES RÁPIDAS (SPEED DIAL)
+// ==========================================================
+function openQuickAction(type) {
+  const wrapper = document.getElementById('mobile-fab-wrapper');
+  if (wrapper) wrapper.classList.remove('open');
+
+  if (window.TransactionsModule) {
+    window.TransactionsModule.setModalTxType(type);
+    document.querySelectorAll('.segment-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+    });
+  }
+  openModal('modal-add-movement');
+}
+
+// ==========================================================
+// PERSISTENCIA LOCAL
 // ==========================================================
 function saveLocalState() {
   localStorage.setItem('finanzas_accounts', JSON.stringify(AppState.accounts));
@@ -165,7 +178,7 @@ async function tryCloudSync() {
       }
     }
   } catch (err) {
-    console.log('Modo autónomo/local activo:', err.message);
+    console.log('Modo autónomo local activo');
   }
 }
 
@@ -180,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Asignar listeners de navegación
+  // Navegación
   document.querySelectorAll('[data-view]').forEach(el => {
     el.addEventListener('click', () => {
       const view = el.getAttribute('data-view');
@@ -200,20 +213,19 @@ document.addEventListener('DOMContentLoaded', () => {
     greetingEl.innerHTML = `${greeting}, <strong>${firstName}</strong>`;
   }
 
-  // Actualizar avatar del usuario
+  // Avatar
   const avatarEl = document.getElementById('user-avatar-initials');
   if (avatarEl) {
     avatarEl.textContent = (AppState.user.name || 'GA').substring(0, 2).toUpperCase();
   }
 
-  // Inicializar módulos y vistas
+  // Inicializar módulos
   if (window.DashboardModule) window.DashboardModule.init();
   if (window.TransactionsModule) window.TransactionsModule.init();
   if (window.AccountsModule) window.AccountsModule.init();
   if (window.BudgetModule) window.BudgetModule.init();
   if (window.GoalsModule) window.GoalsModule.init();
   if (window.ReportsModule) window.ReportsModule.init();
-  if (window.FinanzasAIModule) window.FinanzasAIModule.init();
 
   tryCloudSync();
 });
@@ -223,5 +235,6 @@ window.formatCurrency = formatCurrency;
 window.switchView = switchView;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.openQuickAction = openQuickAction;
 window.saveLocalState = saveLocalState;
 window.uuidv4 = uuidv4;

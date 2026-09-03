@@ -1,6 +1,6 @@
 /**
  * FINANZASAPP — MÓDULO DASHBOARD / OVERVIEW
- * Balance total interactivo, gráfica vectorial SVG por período y tarjetas pastel de cuentas
+ * Balance total con animación numérica progresiva, gráfica interactiva SVG y tarjetas pastel
  */
 
 const DashboardModule = {
@@ -24,6 +24,7 @@ const DashboardModule = {
     this.renderBalanceCard();
     this.renderPastelAccounts();
     this.renderRecentTransactions();
+    this.renderBudgetWidget();
   },
 
   renderBalanceCard() {
@@ -32,9 +33,14 @@ const DashboardModule = {
       .filter(a => !a.is_deleted)
       .reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
 
-    const amountEl = document.getElementById('portfolio-total-balance');
-    if (amountEl) {
-      amountEl.textContent = formatCurrency(total > 0 ? total : 18450000);
+    const finalAmount = total > 0 ? total : 18450000;
+
+    // Animar interpolación numérica con easeOutCubic
+    if (window.MotionSystem && window.MotionSystem.animateBalance) {
+      window.MotionSystem.animateBalance(finalAmount);
+    } else {
+      const amountEl = document.getElementById('portfolio-total-balance');
+      if (amountEl) amountEl.textContent = formatCurrency(finalAmount);
     }
 
     this.renderSvgChart();
@@ -43,7 +49,7 @@ const DashboardModule = {
   bindPeriodButtons() {
     const pills = document.querySelectorAll('.period-pill');
     pills.forEach(pill => {
-      pill.addEventListener('click', (e) => {
+      pill.addEventListener('click', () => {
         pills.forEach(p => p.classList.remove('active'));
         pill.classList.add('active');
         this.activePeriod = pill.getAttribute('data-period') || '1M';
@@ -53,45 +59,10 @@ const DashboardModule = {
   },
 
   renderSvgChart() {
-    const container = document.getElementById('portfolio-chart-container');
-    if (!container) return;
-
     const points = this.chartDataByPeriod[this.activePeriod] || this.chartDataByPeriod['1M'];
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const range = (max - min) || 1;
-
-    const width = 420;
-    const height = 90;
-    const padding = 10;
-
-    const coords = points.map((val, idx) => {
-      const x = padding + (idx / (points.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((val - min) / range) * (height - padding * 2);
-      return { x, y };
-    });
-
-    // Generar línea SVG suave
-    const pathD = coords.reduce((acc, pt, i) => {
-      return i === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`;
-    }, '');
-
-    // Generar área sombreada bajo la curva
-    const areaD = `${pathD} L ${coords[coords.length - 1].x},${height} L ${coords[0].x},${height} Z`;
-
-    container.innerHTML = `
-      <svg class="portfolio-chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#2563EB" stop-opacity="0.25" />
-            <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0" />
-          </linearGradient>
-        </defs>
-        <path d="${areaD}" fill="url(#chartGradient)" />
-        <path d="${pathD}" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        <circle cx="${coords[coords.length - 1].x}" cy="${coords[coords.length - 1].y}" r="4.5" fill="#2563EB" stroke="#FFFFFF" stroke-width="2" />
-      </svg>
-    `;
+    if (window.MotionSystem && window.MotionSystem.renderAnimatedSvgChart) {
+      window.MotionSystem.renderAnimatedSvgChart('portfolio-chart-container', points, this.activePeriod);
+    }
   },
 
   renderPastelAccounts() {
@@ -106,9 +77,10 @@ const DashboardModule = {
       const styleClass = acc.styleClass || defaultStyles[idx % defaultStyles.length];
       const icon = acc.icon || defaultIcons[idx % defaultIcons.length];
       const change = acc.change || (idx === 0 ? '+8.2%' : (idx === 1 ? '+4.1%' : '+0.27%'));
+      const staggerClass = `stagger-${Math.min(idx + 1, 6)}`;
 
       return `
-        <div class="account-pastel-card ${styleClass}" onclick="switchView('accounts')">
+        <div class="account-pastel-card ${styleClass} tilt-card shine-effect ${staggerClass}" onclick="DashboardModule.filterByAccount('${acc.id}')" title="Ver movimientos de esta cuenta">
           <div class="acc-card-top-info">
             <h4>${acc.name}</h4>
             <div class="acc-balance">${formatCurrency(acc.balance)}</div>
@@ -122,6 +94,24 @@ const DashboardModule = {
         </div>
       `;
     }).join('');
+
+    // Re-activar listeners de tilt para las nuevas tarjetas renderizadas
+    if (window.MotionSystem && window.MotionSystem.setup3DTilt) {
+      window.MotionSystem.setup3DTilt();
+    }
+  },
+
+  filterByAccount(accountId) {
+    if (window.TransactionsModule) {
+      switchView('transactions');
+      const input = document.getElementById('tx-search-input');
+      const acc = AppState.accounts.find(a => a.id === accountId);
+      if (input && acc) {
+        input.value = acc.name;
+        window.TransactionsModule.searchQuery = acc.name.toLowerCase();
+        window.TransactionsModule.render();
+      }
+    }
   },
 
   renderRecentTransactions() {
@@ -138,16 +128,17 @@ const DashboardModule = {
       return;
     }
 
-    list.innerHTML = sorted.map(t => {
+    list.innerHTML = sorted.map((t, idx) => {
       const isIngreso = t.type === 'ingreso';
       const isTransfer = t.type === 'transferencia';
       const sign = isIngreso ? '+' : (isTransfer ? '⇄ ' : '-');
       const badgeClass = isIngreso ? 'ingreso' : (isTransfer ? 'transferencia' : 'gasto');
       const badgeText = isIngreso ? 'Ingreso' : (isTransfer ? 'Transferencia' : 'Gasto');
       const icon = t.icon || (isIngreso ? 'arrow-up-right-dots' : (isTransfer ? 'exchange-alt' : 'shopping-bag'));
+      const staggerClass = `stagger-${Math.min(idx + 1, 6)}`;
 
       return `
-        <li class="movement-item">
+        <li class="movement-item ${staggerClass}">
           <div class="movement-left">
             <div class="movement-icon-box ${badgeClass}">
               <i class="fas fa-${icon}"></i>
@@ -164,6 +155,58 @@ const DashboardModule = {
         </li>
       `;
     }).join('');
+  },
+
+  renderBudgetWidget() {
+    const container = document.getElementById('overview-budget-widget');
+    if (!container) return;
+
+    const catTotals = {};
+    let totalExpense = 0;
+    AppState.transactions.forEach(t => {
+      if (t.is_deleted || (t.type !== 'gasto' && t.type !== 'egreso')) return;
+      const amt = parseFloat(t.amount) || 0;
+      catTotals[t.category] = (catTotals[t.category] || 0) + amt;
+      totalExpense += amt;
+    });
+
+    const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 2);
+
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Control de Presupuestos</h4>
+            <span style="font-size: 0.75rem; color: var(--brand-blue); font-weight: 700; cursor: pointer;" onclick="switchView('budget')">Ver más &rarr;</span>
+          </div>
+          
+          <div style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+              <span>Alimentación</span>
+              <strong>$ 420.000 / $ 600.000 (70%)</strong>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--bg-input); border-radius: 9999px; overflow: hidden;">
+              <div class="progress-animated-bar" style="width: 70%; height: 100%; background: #3B82F6; border-radius: 9999px;"></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+              <span>Transporte</span>
+              <strong>$ 180.000 / $ 300.000 (60%)</strong>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--bg-input); border-radius: 9999px; overflow: hidden;">
+              <div class="progress-animated-bar" style="width: 60%; height: 100%; background: #10B981; border-radius: 9999px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding-top: 14px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.78rem; color: var(--text-secondary);">Ahorro disponible este mes</span>
+          <span style="font-size: 0.95rem; font-weight: 800; color: #10B981;">+ $ 2.558.000</span>
+        </div>
+      </div>
+    `;
   }
 };
 

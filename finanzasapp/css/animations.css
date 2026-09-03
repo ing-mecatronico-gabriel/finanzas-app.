@@ -1,0 +1,522 @@
+/* ==========================================================================
+   FINANZASAPP — SISTEMA AVANZADO DE ANIMACIONES Y MICROINTERACCIONES
+   Motion design de alto nivel: fluidez, profundidad, jerarquía y retroalimentación física
+   ========================================================================== */
+
+:root {
+  --motion-fast: 150ms;
+  --motion-normal: 300ms;
+  --motion-slow: 600ms;
+  --motion-spring: 700ms;
+
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-entrance: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* 1. ANIMACIÓN DE ENTRADA GENERAL ESCALONADA (APP ENTRANCE) */
+.app-container {
+  animation: appEntrance 0.65s var(--ease-entrance) forwards;
+}
+
+@keyframes appEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.985) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.app-sidebar {
+  animation: sidebarEntrance 0.5s var(--ease-entrance) 0.1s backwards;
+}
+
+@keyframes sidebarEntrance {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.main-header {
+  animation: headerEntrance 0.5s var(--ease-entrance) 0.18s backwards;
+}
+
+@keyframes headerEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 2. STAGGER ANIMATIONS (SISTEMA ESCALONADO) */
+.stagger-1 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.22s backwards; }
+.stagger-2 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.30s backwards; }
+.stagger-3 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.38s backwards; }
+.stagger-4 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.46s backwards; }
+.stagger-5 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.54s backwards; }
+.stagger-6 { animation: itemFadeUp 0.5s var(--ease-entrance) 0.62s backwards; }
+
+@keyframes itemFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 3. GRÁFICA VECTORIAL ANIMADA */
+.chart-draw-line {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawSvgLine 1.4s var(--ease-entrance) 0.3s forwards;
+}
+
+@keyframes drawSvgLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-fade-area {
+  opacity: 0;
+  animation: fadeInArea 0.9s ease 0.6s forwards;
+}
+
+@keyframes fadeInArea {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pulso del punto final de la curva */
+.chart-pulse-dot {
+  transform-origin: center;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    r: 4.5;
+    opacity: 1;
+    stroke-width: 2;
+  }
+  50% {
+    r: 6.5;
+    opacity: 0.85;
+    stroke-width: 3.5;
+  }
+}
+
+/* Guía y Tooltip interactivo de la gráfica */
+.chart-guideline {
+  stroke: var(--brand-blue);
+  stroke-width: 1.5;
+  stroke-dasharray: 3, 3;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.chart-tooltip-bubble {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translate(-50%, -120%) scale(0.9);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 50;
+  white-space: nowrap;
+}
+
+.chart-tooltip-bubble.active {
+  opacity: 1;
+  transform: translate(-50%, -120%) scale(1);
+}
+
+/* 4. EFECTO 3D TILT EN TARJETAS */
+.tilt-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+}
+
+/* 5. EFECTO DE REFLEJO DE LUZ (SHINE SWEEP) */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 100%
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+[data-theme="dark"] .shine-effect::before {
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+}
+
+.shine-effect:hover::before {
+  left: 200%;
+  transition: left 0.85s var(--ease-in-out-cubic);
+}
+
+/* 6. MICROINTERACCIONES DE BOTONES E ICONOS (PRESIÓN FÍSICA) */
+.btn-interactive,
+.sidebar-btn,
+.period-pill,
+.header-icon-btn,
+.nav-item-btn,
+.btn-primary-action,
+.btn-secondary,
+.btn-submit {
+  transition: transform var(--motion-fast) var(--ease-out-cubic),
+              box-shadow var(--motion-fast) var(--ease-out-cubic),
+              background var(--motion-fast) ease;
+}
+
+.btn-interactive:active,
+.sidebar-btn:active,
+.period-pill:active,
+.header-icon-btn:active,
+.nav-item-btn:active,
+.btn-primary-action:active,
+.btn-secondary:active,
+.btn-submit:active {
+  transform: scale(0.92) !important;
+}
+
+/* 7. OSCILACIÓN EN CAMPANA DE NOTIFICACIONES */
+.bell-ring {
+  animation: bellSwing 0.75s ease-in-out;
+  transform-origin: top center;
+}
+
+@keyframes bellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(14deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(8deg); }
+}
+
+/* 8. SISTEMA DE TOAST NOTIFICATIONS (NOTIFICACIONES DINÁMICAS) */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .toast-container {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+  }
+}
+
+.toast-item {
+  pointer-events: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  position: relative;
+  overflow: hidden;
+  animation: toastSlideIn 0.35s var(--ease-spring) forwards;
+}
+
+.toast-item.exit {
+  animation: toastSlideOut 0.3s var(--ease-out-cubic) forwards;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+}
+
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--brand-blue);
+  width: 100%;
+  transform-origin: left;
+  animation: toastProgress 3.5s linear forwards;
+}
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* 9. SPEED DIAL (BOTÓN "+" ANIMADO EN MÓVIL) */
+.speed-dial-wrapper {
+  position: relative;
+}
+
+.speed-dial-menu {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+  z-index: 950;
+}
+
+.speed-dial-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(15px) scale(0.85);
+  transition: transform var(--motion-normal) var(--ease-spring),
+              opacity var(--motion-normal) ease;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.speed-dial-wrapper.open .speed-dial-menu {
+  pointer-events: auto;
+}
+
+.speed-dial-wrapper.open .speed-dial-item:nth-child(1) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.05s;
+}
+
+.speed-dial-wrapper.open .speed-dial-item:nth-child(2) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.1s;
+}
+
+.speed-dial-wrapper.open .speed-dial-item:nth-child(3) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.15s;
+}
+
+.speed-dial-wrapper.open .nav-item-btn.add-btn i {
+  transform: rotate(45deg);
+  transition: transform var(--motion-normal) var(--ease-spring);
+}
+
+.nav-item-btn.add-btn i {
+  transition: transform var(--motion-normal) var(--ease-spring);
+}
+
+/* 10. MODALES CON APERTURA Y CIERRE FLUIDOS */
+.modal-overlay {
+  transition: opacity 0.24s ease, backdrop-filter 0.24s ease;
+}
+
+.modal-box {
+  transition: transform 0.28s var(--ease-spring), opacity 0.24s ease;
+}
+
+.modal-overlay.active .modal-box {
+  animation: modalScaleUp 0.3s var(--ease-spring) forwards;
+}
+
+.modal-overlay.closing {
+  opacity: 0 !important;
+}
+
+.modal-overlay.closing .modal-box {
+  transform: scale(0.92) translateY(18px) !important;
+  opacity: 0 !important;
+}
+
+@keyframes modalScaleUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.91) translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 11. BARRAS DE PROGRESO ANIMADAS */
+.progress-animated-bar {
+  transform-origin: left;
+  animation: expandProgressBar 0.85s var(--ease-entrance) forwards;
+}
+
+@keyframes expandProgressBar {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* 12. TRANSICIÓN SUAVE ENTRE VISTAS */
+.view-section {
+  animation: viewTransitionIn 0.32s var(--ease-out-cubic) forwards;
+}
+
+@keyframes viewTransitionIn {
+  0% {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 13. SKELETON SHIMMER LOADERS */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    var(--border-color) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 1.6s infinite linear;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmerSweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 14. LISTAS Y FILAS CON ENTRADA ESCALONADA Y HOVER SLIDE */
+.movement-item {
+  transition: transform var(--motion-fast) var(--ease-out-cubic),
+              background var(--motion-fast) ease;
+}
+
+.movement-item:hover {
+  transform: translateX(4px);
+}
+
+/* 15. PARTÍCULAS Y CONFETI */
+.particle-burst-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.particle-elem {
+  position: absolute;
+  font-weight: 800;
+  pointer-events: none;
+  animation: particleFly 0.9s cubic-bezier(0.12, 0, 0.39, 0) forwards;
+}
+
+@keyframes particleFly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.2) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.4) rotate(var(--rot));
+  }
+}
+
+/* 16. ACCESIBILIDAD — PREFERS-REDUCED-MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .shine-effect::before,
+  .chart-pulse-dot {
+    display: none !important;
+  }
+}

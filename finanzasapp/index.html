@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>FinanzasApp — Fintech Moderna</title>
+  <title>FinanzasApp — Gestión Financiera</title>
   
   <!-- Tipografía Inter y Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,8 +17,14 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/dark-mode.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
+
+  <!-- Indicador Pull to Refresh (Móvil) -->
+  <div id="mobile-pull-indicator" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; z-index: 9999; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); color: var(--brand-blue); transition: opacity 0.2s;">
+    <i class="fas fa-arrow-down"></i>
+  </div>
 
   <div class="app-container">
     
@@ -71,12 +77,6 @@
           </button>
         </li>
         <li class="sidebar-item">
-          <button class="sidebar-btn" data-view="ai">
-            <i class="fas fa-robot"></i>
-            <span class="sidebar-label">Finanzas AI</span>
-          </button>
-        </li>
-        <li class="sidebar-item">
           <button class="sidebar-btn" data-view="settings">
             <i class="fas fa-cog"></i>
             <span class="sidebar-label">Configuración</span>
@@ -111,17 +111,17 @@
           </div>
 
           <!-- Píldora de Notificaciones -->
-          <button class="header-icon-btn" title="Notificaciones">
+          <button class="header-icon-btn btn-interactive" title="Notificaciones">
             <i class="fas fa-bell"></i>
           </button>
 
           <!-- Selector de Modo Claro / Oscuro -->
-          <button class="header-icon-btn" data-action="toggle-theme" title="Cambiar Tema (Claro/Oscuro/Auto)">
+          <button class="header-icon-btn btn-interactive" data-action="toggle-theme" title="Cambiar Tema (Claro/Oscuro/Auto)">
             <i class="fas fa-moon theme-icon-indicator"></i>
           </button>
 
           <!-- Perfil de Usuario -->
-          <div class="header-user-pill" onclick="switchView('settings')">
+          <div class="header-user-pill btn-interactive" onclick="switchView('settings')">
             <div class="user-avatar" id="user-avatar-initials">GA</div>
             <span class="user-name-text">Gabriel M.</span>
             <i class="fas fa-chevron-down" style="font-size: 0.65rem; color: var(--text-muted);"></i>
@@ -139,35 +139,35 @@
         <!-- Fila Superior: Balance Total + Mis Cuentas Pastel -->
         <div class="overview-top-row">
           
-          <!-- TARJETA DE BALANCE PRINCIPAL -->
-          <div class="portfolio-card">
+          <!-- TARJETA DE BALANCE PRINCIPAL (CON GRÁFICA VECTORIAL INTERACTIVA) -->
+          <div class="portfolio-card tilt-card shine-effect stagger-1">
             <div>
               <div class="portfolio-card-head">
                 <span class="portfolio-label">Balance Total</span>
                 <span class="portfolio-badge-gain">+12,4% este mes</span>
               </div>
-              <div class="portfolio-amount" id="portfolio-total-balance">$ 18.450.000</div>
+              <div class="portfolio-amount" id="portfolio-total-balance">$ 0</div>
               <div class="portfolio-sub">Patrimonio neto disponible</div>
             </div>
 
-            <!-- Gráfica SVG de evolución -->
+            <!-- Gráfica SVG interactiva con crosshair y tooltip -->
             <div class="portfolio-chart-wrap" id="portfolio-chart-container">
-              <!-- SVG inyectado por dashboard.js -->
+              <!-- SVG inyectado por motion.js -->
             </div>
 
             <!-- Selector de Períodos -->
             <div class="portfolio-period-tabs">
-              <button class="period-pill" data-period="1D">1D</button>
-              <button class="period-pill" data-period="1S">1S</button>
-              <button class="period-pill active" data-period="1M">1M</button>
-              <button class="period-pill" data-period="6M">6M</button>
-              <button class="period-pill" data-period="1A">1A</button>
-              <button class="period-pill" data-period="TODO">TODO</button>
+              <button class="period-pill btn-interactive" data-period="1D">1D</button>
+              <button class="period-pill btn-interactive" data-period="1S">1S</button>
+              <button class="period-pill btn-interactive active" data-period="1M">1M</button>
+              <button class="period-pill btn-interactive" data-period="6M">6M</button>
+              <button class="period-pill btn-interactive" data-period="1A">1A</button>
+              <button class="period-pill btn-interactive" data-period="TODO">TODO</button>
             </div>
           </div>
 
-          <!-- SECCIÓN: MIS CUENTAS (TARJETAS PASTEL HORIZONTALES) -->
-          <div class="assets-section-card">
+          <!-- SECCIÓN: MIS CUENTAS (TARJETAS PASTEL HORIZONTALES CON 3D TILT) -->
+          <div class="assets-section-card stagger-2">
             <div class="section-subhead">
               <h3>Mis cuentas</h3>
               <span class="link-see-all" onclick="switchView('accounts')">Ver todas &rarr;</span>
@@ -180,11 +180,11 @@
 
         </div>
 
-        <!-- Fila Inferior: Movimientos Recientes + Finanzas AI -->
+        <!-- Fila Inferior: Movimientos Recientes + Control de Presupuestos -->
         <div class="overview-bottom-row">
           
           <!-- MOVIMIENTOS RECIENTES -->
-          <div class="activity-card">
+          <div class="activity-card stagger-2">
             <div class="section-subhead">
               <h3>Movimientos recientes</h3>
               <span class="link-see-all" onclick="switchView('transactions')">Ver todos &rarr;</span>
@@ -195,20 +195,9 @@
             </ul>
           </div>
 
-          <!-- TARJETA FINANZAS AI ASISTENTE -->
-          <div class="ai-assistant-card">
-            <div class="ai-card-top">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #60A5FA; font-weight: 700; font-size: 0.85rem;">
-                <i class="fas fa-robot"></i> Finanzas AI
-              </div>
-              <h4>Haz crecer tus finanzas con IA</h4>
-              <p id="ai-banner-headline">Analiza tus gastos, detecta oportunidades de ahorro y toma mejores decisiones financieras.</p>
-            </div>
-
-            <button class="btn-ai-action" data-action="open-ai-analysis">
-              <span>Analizar mis gastos</span>
-              <i class="fas fa-arrow-right"></i>
-            </button>
+          <!-- TARJETA: CONTROL DE PRESUPUESTOS Y AHORRO (REEMPLAZO PROFESIONAL DE IA) -->
+          <div class="activity-card shine-effect stagger-3" id="overview-budget-widget" style="padding: 24px;">
+            <!-- Renderizado dinámico desde dashboard.js -->
           </div>
 
         </div>
@@ -236,7 +225,7 @@
             </div>
 
             <!-- Botón "+ Añadir" -->
-            <button class="btn-primary-action" data-action="open-add-modal">
+            <button class="btn-primary-action btn-interactive" data-action="open-add-modal">
               <i class="fas fa-plus"></i>
               <span>Añadir Movimiento</span>
             </button>
@@ -259,7 +248,7 @@
             <h3 style="font-size: 1.25rem; font-weight: 700;">Tus Cuentas y Billeteras</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary);">Administra tus cuentas bancarias, billeteras digitales y efectivo físico</p>
           </div>
-          <button class="btn-primary-action" onclick="openModal('modal-add-account')">
+          <button class="btn-primary-action btn-interactive" onclick="openModal('modal-add-account')">
             <i class="fas fa-plus"></i> Nueva Cuenta
           </button>
         </div>
@@ -278,7 +267,7 @@
             <h3 style="font-size: 1.25rem; font-weight: 700;">Presupuesto Mensual</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary);">Controla tus límites de gasto para evitar excesos</p>
           </div>
-          <button class="btn-primary-action" onclick="openModal('modal-add-budget')">
+          <button class="btn-primary-action btn-interactive" onclick="openModal('modal-add-budget')">
             <i class="fas fa-plus"></i> Nuevo Presupuesto
           </button>
         </div>
@@ -297,7 +286,7 @@
             <h3 style="font-size: 1.25rem; font-weight: 700;">Metas de Ahorro</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary);">Construye tus proyectos paso a paso con aportes programados</p>
           </div>
-          <button class="btn-primary-action" onclick="openModal('modal-add-goal')">
+          <button class="btn-primary-action btn-interactive" onclick="openModal('modal-add-goal')">
             <i class="fas fa-plus"></i> Nueva Meta
           </button>
         </div>
@@ -313,19 +302,19 @@
       <section id="view-reports" class="view-section">
         <!-- Tarjetas KPIs Resumen -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <div class="activity-card" style="padding: 18px;">
+          <div class="activity-card tilt-card" style="padding: 18px;">
             <span style="font-size: 0.78rem; font-weight: 700; color: var(--income-color);">INGRESOS</span>
             <div id="report-total-income" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
           </div>
-          <div class="activity-card" style="padding: 18px;">
+          <div class="activity-card tilt-card" style="padding: 18px;">
             <span style="font-size: 0.78rem; font-weight: 700; color: var(--expense-color);">GASTOS</span>
             <div id="report-total-expense" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
           </div>
-          <div class="activity-card" style="padding: 18px;">
+          <div class="activity-card tilt-card" style="padding: 18px;">
             <span style="font-size: 0.78rem; font-weight: 700; color: var(--brand-blue);">AHORRO NETO</span>
             <div id="report-net-savings" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">$ 0</div>
           </div>
-          <div class="activity-card" style="padding: 18px;">
+          <div class="activity-card tilt-card" style="padding: 18px;">
             <span style="font-size: 0.78rem; font-weight: 700; color: #8B5CF6;">TASA DE AHORRO</span>
             <div id="report-savings-rate" style="font-size: 1.45rem; font-weight: 800; margin-top: 4px;">0%</div>
           </div>
@@ -347,46 +336,7 @@
       </section>
 
       <!-- ==========================================================
-           VISTA 7: ASISTENTE FINANZAS AI
-           ========================================================== -->
-      <section id="view-ai" class="view-section">
-        <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-robot" style="color: var(--brand-blue);"></i>
-            <span>Asistente Financiero Inteligente</span>
-          </h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Diagnósticos automáticos, recomendaciones de optimización y consultas financieras</p>
-        </div>
-
-        <!-- Tarjetas de Diagnóstico -->
-        <div id="ai-insights-cards"></div>
-
-        <!-- Chat / Consultas Interactivas -->
-        <div class="activity-card" style="margin-top: 24px;">
-          <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 14px;">Pregúntale a Finanzas AI</h4>
-          <div id="ai-conversation-output" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px; padding: 10px 0;">
-            <!-- Mensaje de bienvenida -->
-            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
-              <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 18px 18px 18px 4px; font-size: 0.88rem; max-width: 85%;">
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--brand-blue); font-size: 0.75rem; font-weight: 700; margin-bottom: 4px;">
-                  <i class="fas fa-robot"></i> Finanzas AI
-                </div>
-                ¡Hola, Gabriel! He analizado tus ingresos y gastos de este mes. Puedes preguntarme sobre tus balances, cuánto has gastado en comida, o pedirme consejos para ahorrar.
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px;">
-            <input type="text" id="ai-query-input" class="form-control" placeholder="Ej: ¿Cuánto he gastado este mes? o ¿Cómo va mi meta de universidad?" style="border-radius: var(--radius-pill);">
-            <button id="btn-ai-send-query" class="btn-primary-action" style="padding: 10px 20px;">
-              <i class="fas fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==========================================================
-           VISTA 8: CONFIGURACIÓN Y PERFIL
+           VISTA 7: CONFIGURACIÓN Y PERFIL
            ========================================================== -->
       <section id="view-settings" class="view-section">
         <div class="activity-card" style="max-width: 600px; margin-bottom: 20px;">
@@ -395,13 +345,13 @@
             <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem;">GA</div>
             <div>
               <h3 style="font-size: 1.2rem; font-weight: 800;">Gabriel M.</h3>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">Usuario Administrador</span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Usuario Activo</span>
             </div>
           </div>
           <div style="border-top: 1px solid var(--border-light); padding-top: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <span>Tema de la aplicación:</span>
-              <button class="btn-secondary" data-action="toggle-theme" style="width: auto; padding: 6px 14px;">
+              <button class="btn-secondary btn-interactive" data-action="toggle-theme" style="width: auto; padding: 6px 14px;">
                 <i class="fas fa-moon theme-icon-indicator"></i>
                 <span class="theme-label-indicator">Modo Oscuro</span>
               </button>
@@ -414,6 +364,7 @@
 
     <!-- ==========================================================
          BARRA DE NAVEGACIÓN FIJA INFERIOR (CELULAR / APK)
+         CON SPEED DIAL DE ACCIONES RÁPIDAS
          ========================================================== -->
     <nav class="bottom-nav-bar">
       <button class="nav-item-btn active" data-view="overview">
@@ -424,9 +375,25 @@
         <i class="fas fa-exchange-alt"></i>
         <span>Movimientos</span>
       </button>
-      <button class="nav-item-btn add-btn" data-action="open-add-modal" title="Añadir Movimiento">
-        <i class="fas fa-plus"></i>
-      </button>
+
+      <!-- SPEED DIAL "+" ANIMADO -->
+      <div class="speed-dial-wrapper" id="mobile-fab-wrapper">
+        <div class="speed-dial-menu">
+          <button class="speed-dial-item" onclick="openQuickAction('ingreso')">
+            <i class="fas fa-arrow-up" style="color: #10B981;"></i> Ingreso
+          </button>
+          <button class="speed-dial-item" onclick="openQuickAction('gasto')">
+            <i class="fas fa-shopping-cart" style="color: #EF4444;"></i> Gasto
+          </button>
+          <button class="speed-dial-item" onclick="openQuickAction('transferencia')">
+            <i class="fas fa-exchange-alt" style="color: #3B82F6;"></i> Transferir
+          </button>
+        </div>
+        <button class="nav-item-btn add-btn btn-interactive" id="mobile-fab-btn" title="Añadir Movimiento">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
       <button class="nav-item-btn" data-view="reports">
         <i class="fas fa-chart-line"></i>
         <span>Reportes</span>
@@ -488,8 +455,8 @@
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-movement')">Cancelar</button>
-          <button type="submit" class="btn-submit">Guardar Movimiento</button>
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-add-movement')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Guardar Movimiento</button>
         </div>
       </form>
     </div>
@@ -531,8 +498,8 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-account')">Cancelar</button>
-          <button type="submit" class="btn-submit">Crear Cuenta</button>
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-add-account')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Crear Cuenta</button>
         </div>
       </form>
     </div>
@@ -561,8 +528,8 @@
           <input type="number" id="transfer-amount" class="form-control" placeholder="0" step="any" required>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('modal-transfer-direct')">Cancelar</button>
-          <button type="submit" class="btn-submit">Realizar Transferencia</button>
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-transfer-direct')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Realizar Transferencia</button>
         </div>
       </form>
     </div>
@@ -587,8 +554,8 @@
           <input type="number" id="budget-new-limit" class="form-control" placeholder="Ej: 500000" step="any" required>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-budget')">Cancelar</button>
-          <button type="submit" class="btn-submit">Guardar Presupuesto</button>
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-add-budget')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Guardar Presupuesto</button>
         </div>
       </form>
     </div>
@@ -626,8 +593,8 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-goal')">Cancelar</button>
-          <button type="submit" class="btn-submit">Crear Meta</button>
+          <button type="button" class="btn-secondary btn-interactive" onclick="closeModal('modal-add-goal')">Cancelar</button>
+          <button type="submit" class="btn-submit btn-interactive">Crear Meta</button>
         </div>
       </form>
     </div>
@@ -635,13 +602,13 @@
 
   <!-- Scripts Modulares -->
   <script src="js/theme.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/transactions.js"></script>
   <script src="js/accounts.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/goals.js"></script>
   <script src="js/reports.js"></script>
-  <script src="js/ai.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

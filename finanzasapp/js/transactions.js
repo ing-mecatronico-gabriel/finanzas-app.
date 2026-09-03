@@ -1,6 +1,6 @@
 /**
  * FINANZASAPP — MÓDULO DE MOVIMIENTOS Y TRANSACCIONES
- * Filtros en tiempo real, buscador y modal "+ Añadir Movimiento"
+ * Filtros en tiempo real, buscador, partículas de éxito y notificaciones toast
  */
 
 const TransactionsModule = {
@@ -139,7 +139,7 @@ const TransactionsModule = {
       return;
     }
 
-    container.innerHTML = list.map(t => {
+    container.innerHTML = list.map((t, idx) => {
       const isIngreso = t.type === 'ingreso';
       const isTransfer = t.type === 'transferencia';
       const sign = isIngreso ? '+' : (isTransfer ? '⇄ ' : '-');
@@ -148,9 +148,10 @@ const TransactionsModule = {
       const icon = t.icon || (isIngreso ? 'arrow-up-right-dots' : (isTransfer ? 'exchange-alt' : 'shopping-bag'));
       const acc = AppState.accounts.find(a => a.id === t.account_id);
       const accName = acc ? acc.name : 'Cuenta';
+      const staggerClass = `stagger-${Math.min((idx % 6) + 1, 6)}`;
 
       return `
-        <div class="movement-item" style="border-bottom: 1px solid var(--border-light); padding: 14px 10px;">
+        <div class="movement-item ${staggerClass}" style="border-bottom: 1px solid var(--border-light); padding: 14px 10px;">
           <div class="movement-left">
             <div class="movement-icon-box ${badgeClass}">
               <i class="fas fa-${icon}"></i>
@@ -165,7 +166,7 @@ const TransactionsModule = {
               <span class="movement-amount ${badgeClass}">${sign}${formatCurrency(t.amount)}</span>
               <span class="movement-type-badge ${badgeClass}">${badgeText}</span>
             </div>
-            <button onclick="TransactionsModule.deleteTransaction('${t.id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;" title="Eliminar">
+            <button onclick="TransactionsModule.deleteTransaction('${t.id}')" class="btn-interactive" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px;" title="Eliminar">
               <i class="fas fa-trash-alt"></i>
             </button>
           </div>
@@ -184,13 +185,15 @@ const TransactionsModule = {
     const date = document.getElementById('modal-tx-date').value || new Date().toISOString().split('T')[0];
 
     if (!amount || amount <= 0 || !account_id) {
-      alert('Ingresa un monto válido y selecciona una cuenta.');
+      if (window.MotionSystem) window.MotionSystem.showToast('Error', 'Ingresa un monto válido y selecciona una cuenta.', 'exclamation-circle');
+      else alert('Ingresa un monto válido y selecciona una cuenta.');
       return;
     }
 
     const type = this.modalTxType;
     if (type === 'transferencia' && account_id === to_account_id) {
-      alert('La cuenta de origen y destino no pueden ser la misma.');
+      if (window.MotionSystem) window.MotionSystem.showToast('Error', 'La cuenta origen y destino deben ser diferentes.', 'exclamation-circle');
+      else alert('La cuenta origen y destino deben ser diferentes.');
       return;
     }
 
@@ -222,7 +225,7 @@ const TransactionsModule = {
     AppState.transactions.unshift(newTx);
     saveLocalState();
 
-    // Intentar sincronizar con Backend si hay conexión
+    // Sincronización en segundo plano con el backend
     if (AppState.token && navigator.onLine) {
       try {
         await fetch(`${API_BASE}/transactions`, {
@@ -238,9 +241,21 @@ const TransactionsModule = {
       }
     }
 
-    // Limpiar formulario y cerrar modal
+    // Disparar animación de partículas financieras y toast
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (window.MotionSystem) {
+      window.MotionSystem.spawnFinancialParticles(submitBtn);
+      window.MotionSystem.showToast(
+        type === 'ingreso' ? '¡Ingreso Añadido!' : (type === 'transferencia' ? '¡Transferencia Exitosa!' : '¡Gasto Registrado!'),
+        `${newTx.description}: ${formatCurrency(amount)}`,
+        type === 'ingreso' ? 'arrow-up' : (type === 'transferencia' ? 'exchange-alt' : 'shopping-cart')
+      );
+    }
+
+    // Limpiar formulario y cerrar modal animadamente
     document.getElementById('form-add-movement').reset();
-    closeModal('modal-add-movement');
+    if (window.closeModalAnimated) window.closeModalAnimated('modal-add-movement');
+    else closeModal('modal-add-movement');
 
     // Refrescar vistas
     this.render();
@@ -268,6 +283,10 @@ const TransactionsModule = {
 
     AppState.transactions.splice(idx, 1);
     saveLocalState();
+
+    if (window.MotionSystem) {
+      window.MotionSystem.showToast('Movimiento Eliminado', 'El saldo fue actualizado automáticamente.', 'trash-alt');
+    }
 
     this.render();
     if (window.DashboardModule) window.DashboardModule.render();
