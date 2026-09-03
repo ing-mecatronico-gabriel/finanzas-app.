@@ -15,7 +15,7 @@ async function ensureAdminExists() {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash('1', salt);
     await db.insert('users', {
-      id: 'admin-master-001',
+      id: '00000000-0000-0000-0000-000000000001',
       username: '1',
       name: 'Administrador',
       password_hash,
