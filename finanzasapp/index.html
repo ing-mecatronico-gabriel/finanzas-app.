@@ -156,6 +156,11 @@
             <i class="fas fa-bell"></i>
           </button>
 
+          <!-- Botón Efectos de Sonido (Web Audio API) -->
+          <button class="header-icon-btn btn-interactive" onclick="SoundFX.toggleSound()" title="Efectos de Sonido (Activar/Silenciar)">
+            <i class="fas fa-volume-up sound-toggle-icon" style="color: var(--brand-blue);"></i>
+          </button>
+
           <!-- Selector de Modo Claro / Oscuro -->
           <button class="header-icon-btn btn-interactive" data-action="toggle-theme" title="Cambiar Tema (Claro/Oscuro/Auto)">
             <i class="fas fa-moon theme-icon-indicator"></i>
@@ -241,6 +246,11 @@
             <!-- Renderizado dinámico desde dashboard.js -->
           </div>
 
+        </div>
+
+        <!-- APARTADO DE CRÉDITO Y TARJETAS EN INICIO -->
+        <div class="activity-card shine-effect stagger-3" id="overview-credits-widget" style="padding: 24px; margin-top: 20px;">
+          <!-- Inyectado por dashboard.js -->
         </div>
 
       </section>
@@ -377,6 +387,43 @@
            VISTA 6: REPORTES FINANCIEROS
            ========================================================== -->
       <section id="view-reports" class="view-section">
+        <!-- Barra de Filtros de Período y Botón Descargar Excel -->
+        <div class="activity-card" style="margin-bottom: 20px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; margin-right: 4px;">Período:</span>
+              <button class="period-pill report-filter-pill active" data-period="todos">Total</button>
+              <button class="period-pill report-filter-pill" data-period="diario">Diario (Hoy)</button>
+              <button class="period-pill report-filter-pill" data-period="semanal">Semanal</button>
+              <button class="period-pill report-filter-pill" data-period="quincenal">Quincenal</button>
+              <button class="period-pill report-filter-pill" data-period="mensual">Mensual</button>
+              <button class="period-pill report-filter-pill" data-period="anual">Anual</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="report-month-filter" class="form-control" style="width: auto; padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-pill);">
+                <option value="todos">Todos los meses</option>
+                <option value="01">Enero</option>
+                <option value="02">Febrero</option>
+                <option value="03">Marzo</option>
+                <option value="04">Abril</option>
+                <option value="05">Mayo</option>
+                <option value="06">Junio</option>
+                <option value="07">Julio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+
+              <button id="btn-download-report-excel" class="btn-primary-action btn-interactive" style="background: #10B981; padding: 8px 16px; font-size: 0.82rem; border-radius: var(--radius-pill); display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-file-excel"></i> Descargar Excel
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Tarjetas KPIs Resumen -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
           <div class="activity-card tilt-card" style="padding: 18px;">
@@ -448,6 +495,23 @@
                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- TARJETA: COPIA DE SEGURIDAD Y RESPALDO EN EXCEL -->
+        <div class="activity-card" style="max-width: 600px; margin-bottom: 20px;">
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;"><i class="fas fa-shield-alt" style="color: var(--brand-blue); margin-right: 8px;"></i>Copia de Seguridad y Respaldo Local</h4>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+            Descarga un respaldo completo en Excel (.xlsx) con todas tus cuentas, movimientos, presupuestos y créditos. Puedes guardarlo por si acaso o restaurarlo en cualquier momento.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-primary-action btn-interactive" onclick="exportFullBackupExcel()" style="flex: 1; min-width: 180px; justify-content: center; background: #10B981; padding: 10px 14px; font-size: 0.82rem;">
+              <i class="fas fa-file-download"></i> Descargar Respaldo (.xlsx)
+            </button>
+            <label class="btn-secondary btn-interactive" style="flex: 1; min-width: 180px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 10px 14px; font-size: 0.82rem; margin: 0; border-radius: var(--radius-pill);">
+              <i class="fas fa-file-upload"></i> Restaurar Respaldo
+              <input type="file" accept=".xlsx" style="display: none;" onchange="restoreFullBackupExcel(event)">
+            </label>
           </div>
         </div>
       </section>
@@ -699,11 +763,16 @@
           <input type="number" id="acc-new-balance" class="form-control" placeholder="0" value="0" step="any">
         </div>
         <div class="form-group">
-          <label>Estilo Visual Pastel</label>
+          <label>Estilo Visual Pastel / Color</label>
           <select id="acc-new-style" class="form-control">
-            <option value="principal">Lila Pastel (Principal)</option>
-            <option value="ahorros">Menta Pastel (Ahorros)</option>
-            <option value="efectivo">Dorado Pastel (Efectivo)</option>
+            <option value="principal">🟣 Lila Imperial (Principal)</option>
+            <option value="ahorros">🟢 Menta Esmeralda (Ahorros)</option>
+            <option value="efectivo">🟡 Oro Real / Ámbar (Efectivo)</option>
+            <option value="azul-electrico">🔵 Azul Zafiro Eléctrico</option>
+            <option value="coral-sunset">🟠 Coral Sunset / Atardecer</option>
+            <option value="cian-oceano">🌊 Cian Océano Caribe</option>
+            <option value="rosa-magenta">🌸 Rosa Neón Magenta</option>
+            <option value="titanio-dark">⚫ Titanio Dark / Grafito</option>
           </select>
         </div>
         <div class="modal-actions">
@@ -957,6 +1026,7 @@
 
   <!-- Scripts Modulares -->
   <script src="js/theme.js"></script>
+  <script src="js/sound.js"></script>
   <script src="js/motion.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/transactions.js"></script>

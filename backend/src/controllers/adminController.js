@@ -43,7 +43,7 @@ exports.updateUserPassword = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { new_password } = req.body;
+    const new_password = req.body.new_password || req.body.password;
 
     if (!new_password) {
       return res.status(400).json({ success: false, error: 'Nueva contraseña requerida' });

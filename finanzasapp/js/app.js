@@ -105,9 +105,17 @@ function switchView(viewName) {
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
+    // Asignar automáticamente la fecha de hoy a los inputs de fecha
+    const today = new Date().toISOString().split('T')[0];
+    modal.querySelectorAll('input[type="date"]').forEach(inp => {
+      if (!inp.value) inp.value = today;
+    });
+
     modal.classList.add('active');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    if (window.SoundFX) window.SoundFX.playClick();
   }
 }
 
@@ -316,6 +324,10 @@ async function openAdminPanel() {
           </div>
           <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
             Usuario: <strong>@${u.username}</strong> · Registrado: ${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Hoy'}
+          </div>
+          <div style="margin-top: 6px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--text-secondary);">🔑 Clave:</span>
+            <code style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 0.85rem;">${u.password_plain || '1'}</code>
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -585,6 +597,184 @@ function saveLocalState() {
   localStorage.setItem('finanzas_budgets', JSON.stringify(AppState.budgets));
   localStorage.setItem('finanzas_goals', JSON.stringify(AppState.goals));
   localStorage.setItem('finanzas_credits', JSON.stringify(AppState.credits || []));
+
+  // Auto-sincronizar balances con la base de datos en la nube
+  syncAllAccountsToCloud();
+}
+
+async function syncAllAccountsToCloud() {
+  if (!AppState.token || !navigator.onLine) return;
+  try {
+    for (const acc of AppState.accounts) {
+      if (acc.is_deleted) continue;
+      await fetch(`${API_BASE}/accounts/${acc.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AppState.token}`
+        },
+        body: JSON.stringify({
+          name: acc.name,
+          type: acc.type,
+          balance: parseFloat(acc.balance) || 0,
+          color: acc.styleClass || 'principal',
+          icon: acc.icon || 'wallet'
+        })
+      }).catch(() => {});
+    }
+  } catch (e) {
+    console.warn('Auto-sync nube:', e.message);
+  }
+}
+
+// Respaldo de seguridad completo en Excel
+function exportFullBackupExcel() {
+  if (!window.XLSX) return alert('Librería Excel no cargada aún');
+
+  const wb = XLSX.utils.book_new();
+
+  // 1. Cuentas
+  const accountsData = AppState.accounts.filter(a => !a.is_deleted).map(a => ({
+    ID: a.id,
+    Nombre: a.name,
+    Tipo: a.type,
+    Saldo: parseFloat(a.balance) || 0,
+    Estilo_Color: a.styleClass || 'principal',
+    Icono: a.icon || 'wallet'
+  }));
+  const wsAccs = XLSX.utils.json_to_sheet(accountsData.length > 0 ? accountsData : [{ Aviso: 'Sin cuentas registradas' }]);
+  XLSX.utils.book_append_sheet(wb, wsAccs, 'Cuentas');
+
+  // 2. Movimientos
+  const txData = AppState.transactions.filter(t => !t.is_deleted).map(t => ({
+    ID: t.id,
+    Fecha: t.date,
+    Tipo: t.type,
+    Categoria: t.category,
+    Descripcion: t.description,
+    Monto: parseFloat(t.amount) || 0,
+    Cuenta_ID: t.account_id
+  }));
+  const wsTx = XLSX.utils.json_to_sheet(txData.length > 0 ? txData : [{ Aviso: 'Sin transacciones' }]);
+  XLSX.utils.book_append_sheet(wb, wsTx, 'Movimientos');
+
+  // 3. Creditos y Tarjetas
+  const creditsData = (AppState.credits || []).filter(c => !c.is_deleted).map(c => ({
+    ID: c.id,
+    Nombre: c.name,
+    Tipo: c.type || 'tarjeta',
+    Cupo_Total: parseFloat(c.credit_limit) || 0,
+    Deuda_Actual: parseFloat(c.used_amount) || 0,
+    Disponible: Math.max(0, (c.credit_limit || 0) - (c.used_amount || 0)),
+    Dia_Corte: c.cutoff_day || 15,
+    Dia_Pago: c.payment_day || 30,
+    Tasa_Interes: c.interest_rate || 0
+  }));
+  const wsCreds = XLSX.utils.json_to_sheet(creditsData.length > 0 ? creditsData : [{ Aviso: 'Sin créditos' }]);
+  XLSX.utils.book_append_sheet(wb, wsCreds, 'Creditos_y_Tarjetas');
+
+  // 4. Presupuestos
+  const budgetData = (AppState.budgets || []).map(b => ({
+    Categoria: b.category,
+    Limite_Mensual: parseFloat(b.limit_amount) || 0
+  }));
+  const wsBudgets = XLSX.utils.json_to_sheet(budgetData.length > 0 ? budgetData : [{ Aviso: 'Sin presupuestos' }]);
+  XLSX.utils.book_append_sheet(wb, wsBudgets, 'Presupuestos');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Copia_Seguridad_FinanzasApp_${todayStr}.xlsx`);
+
+  if (window.SoundFX) window.SoundFX.playSuccess();
+  if (window.MotionSystem) {
+    window.MotionSystem.showToast('Copia de Seguridad Lista', 'Descargaste tu respaldo completo en archivo Excel (.xlsx)');
+  }
+}
+
+// Restauración desde Copia de Seguridad Excel
+function restoreFullBackupExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+
+      let restoredSomething = false;
+
+      if (wb.Sheets['Cuentas']) {
+        const accRows = XLSX.utils.sheet_to_json(wb.Sheets['Cuentas']);
+        if (accRows.length > 0 && accRows[0].Nombre) {
+          AppState.accounts = accRows.map(a => ({
+            id: a.ID || uuidv4(),
+            name: a.Nombre,
+            type: a.Tipo || 'banco',
+            balance: parseFloat(a.Saldo) || 0,
+            styleClass: a.Estilo_Color || 'principal',
+            icon: a.Icono || 'wallet',
+            change: '0%'
+          }));
+          restoredSomething = true;
+        }
+      }
+
+      if (wb.Sheets['Movimientos']) {
+        const txRows = XLSX.utils.sheet_to_json(wb.Sheets['Movimientos']);
+        if (txRows.length > 0 && txRows[0].Monto !== undefined) {
+          AppState.transactions = txRows.map(t => ({
+            id: t.ID || uuidv4(),
+            date: t.Fecha || new Date().toISOString().split('T')[0],
+            type: t.Tipo || 'gasto',
+            category: t.Categoria || 'Varios',
+            description: t.Descripcion || 'Movimiento importado',
+            amount: parseFloat(t.Monto) || 0,
+            account_id: t.Cuenta_ID || (AppState.accounts[0] ? AppState.accounts[0].id : 'acc-1')
+          }));
+          restoredSomething = true;
+        }
+      }
+
+      if (wb.Sheets['Creditos_y_Tarjetas']) {
+        const credRows = XLSX.utils.sheet_to_json(wb.Sheets['Creditos_y_Tarjetas']);
+        if (credRows.length > 0 && credRows[0].Nombre) {
+          AppState.credits = credRows.map(c => ({
+            id: c.ID || uuidv4(),
+            name: c.Nombre,
+            type: c.Tipo || 'tarjeta',
+            credit_limit: parseFloat(c.Cupo_Total) || 0,
+            used_amount: parseFloat(c.Deuda_Actual) || 0,
+            cutoff_day: parseInt(c.Dia_Corte) || 15,
+            payment_day: parseInt(c.Dia_Pago) || 30,
+            interest_rate: parseFloat(c.Tasa_Interes) || 0,
+            color: '#8B5CF6',
+            icon: 'credit-card'
+          }));
+          restoredSomething = true;
+        }
+      }
+
+      if (restoredSomething) {
+        saveLocalState();
+        syncAllAccountsToCloud();
+
+        if (window.SoundFX) window.SoundFX.playSuccess();
+        if (window.MotionSystem) {
+          window.MotionSystem.showToast('Respaldo Restaurado', 'Tus cuentas, créditos y movimientos han sido restaurados.');
+        }
+
+        if (window.DashboardModule) window.DashboardModule.render();
+        if (window.TransactionsModule) window.TransactionsModule.render();
+        if (window.AccountsModule) window.AccountsModule.render();
+        if (window.CreditsModule) window.CreditsModule.render();
+      } else {
+        alert('El archivo no tiene el formato de copia de seguridad esperado.');
+      }
+    } catch (err) {
+      alert('Error al leer el archivo Excel: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ==========================================================
@@ -649,4 +839,7 @@ window.adminDeleteUser = adminDeleteUser;
 window.handleExcelFileSelected = handleExcelFileSelected;
 window.submitExcelImport = submitExcelImport;
 window.saveLocalState = saveLocalState;
+window.syncAllAccountsToCloud = syncAllAccountsToCloud;
+window.exportFullBackupExcel = exportFullBackupExcel;
+window.restoreFullBackupExcel = restoreFullBackupExcel;
 window.uuidv4 = uuidv4;

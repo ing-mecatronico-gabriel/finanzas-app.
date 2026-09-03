@@ -100,3 +100,45 @@
   border-top-color: #1E2536;
   box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5);
 }
+
+/* Gradientes oscuros luminosos para cuentas en Modo Oscuro */
+[data-theme="dark"] .account-pastel-card.principal {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8), rgba(49, 46, 129, 0.6));
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.ahorros {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.8), rgba(4, 120, 87, 0.5));
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.efectivo {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.8), rgba(180, 83, 9, 0.5));
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.azul-electrico {
+  background: linear-gradient(135deg, rgba(23, 37, 84, 0.8), rgba(30, 58, 138, 0.5));
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.coral-sunset {
+  background: linear-gradient(135deg, rgba(124, 45, 18, 0.8), rgba(154, 52, 18, 0.5));
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.cian-oceano {
+  background: linear-gradient(135deg, rgba(22, 78, 99, 0.8), rgba(14, 116, 144, 0.5));
+  border: 1px solid rgba(103, 232, 249, 0.35);
+  box-shadow: 0 10px 25px rgba(6, 182, 212, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.rosa-magenta {
+  background: linear-gradient(135deg, rgba(131, 24, 67, 0.8), rgba(157, 23, 77, 0.5));
+  border: 1px solid rgba(244, 114, 182, 0.35);
+  box-shadow: 0 10px 25px rgba(236, 72, 153, 0.15);
+}
+[data-theme="dark"] .account-pastel-card.titanio-dark {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.7));
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
+}

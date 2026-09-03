@@ -245,6 +245,7 @@ const CreditsModule = {
     document.getElementById('form-add-credit').reset();
     closeModal('modal-add-credit');
 
+    if (window.SoundFX) window.SoundFX.playSuccess();
     this.render();
     if (window.MotionSystem) {
       window.MotionSystem.showToast('Crédito Registrado', `${name} con cupo de ${formatCurrency(limit)}`);
@@ -313,6 +314,7 @@ const CreditsModule = {
     if (window.TransactionsModule) window.TransactionsModule.render();
     if (window.AccountsModule) window.AccountsModule.render();
 
+    if (window.SoundFX) window.SoundFX.playCash();
     if (window.MotionSystem) {
       window.MotionSystem.spawnFinancialParticles(e.target);
       window.MotionSystem.showToast('¡Abono Realizado!', `Has pagado ${formatCurrency(amount)} a ${credit.name}. Deuda restante: ${formatCurrency(credit.used_amount)}`);
@@ -377,6 +379,7 @@ const CreditsModule = {
     if (window.DashboardModule) window.DashboardModule.render();
     if (window.TransactionsModule) window.TransactionsModule.render();
 
+    if (window.SoundFX) window.SoundFX.playCardSwipe();
     if (window.MotionSystem) {
       window.MotionSystem.showToast('Gasto con Crédito', `${description}: ${formatCurrency(amount)} cargado a ${credit.name}`);
     }

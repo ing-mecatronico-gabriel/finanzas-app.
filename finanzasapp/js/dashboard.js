@@ -16,6 +16,7 @@ const DashboardModule = {
     this.renderPastelAccounts();
     this.renderRecentTransactions();
     this.renderBudgetWidget();
+    this.renderCreditsWidget();
   },
 
   renderBalanceCard() {
@@ -221,6 +222,92 @@ const DashboardModule = {
             ${netSavings >= 0 ? '+' : ''}${formatCurrency(netSavings)}
           </span>
         </div>
+      </div>
+    `;
+  },
+
+  renderCreditsWidget() {
+    const container = document.getElementById('overview-credits-widget');
+    if (!container) return;
+
+    const activeCredits = (AppState.credits || []).filter(c => !c.is_deleted);
+
+    let totalLimit = 0;
+    let totalUsed = 0;
+    activeCredits.forEach(c => {
+      totalLimit += parseFloat(c.credit_limit) || 0;
+      totalUsed += parseFloat(c.used_amount) || 0;
+    });
+    const totalAvailable = Math.max(0, totalLimit - totalUsed);
+
+    if (activeCredits.length === 0) {
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);"><i class="fas fa-credit-card" style="color: #8B5CF6; margin-right: 8px;"></i>Créditos y Tarjetas</h4>
+          <span style="font-size: 0.78rem; color: var(--brand-blue); font-weight: 700; cursor: pointer;" onclick="switchView('credits')">Ir a Crédito &rarr;</span>
+        </div>
+        <div style="padding: 20px; text-align: center; color: var(--text-muted); background: var(--bg-card-subtle); border-radius: 12px; border: 1px dashed var(--border-color);">
+          <p style="font-size: 0.85rem; margin-bottom: 10px;">No tienes tarjetas de crédito o líneas registradas.</p>
+          <button class="btn-secondary btn-interactive" onclick="openModal('modal-add-credit')" style="font-size: 0.8rem; padding: 6px 14px; border-radius: 9999px;">
+            <i class="fas fa-plus"></i> Agregar Tarjeta / Crédito
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-credit-card" style="color: #8B5CF6; font-size: 1.1rem;"></i>
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Crédito y Tarjetas</h4>
+        </div>
+        <span style="font-size: 0.78rem; color: var(--brand-blue); font-weight: 700; cursor: pointer;" onclick="switchView('credits')">Ver detalle &rarr;</span>
+      </div>
+
+      <!-- Resumen Compacto Deuda vs Disponible -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div style="background: var(--bg-card-subtle); padding: 10px 12px; border-radius: 10px; border-left: 3px solid #EF4444;">
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">DEUDA UTILIZADA</span>
+          <div style="font-size: 1.05rem; font-weight: 800; color: #EF4444; margin-top: 2px;">${formatCurrency(totalUsed)}</div>
+        </div>
+        <div style="background: var(--bg-card-subtle); padding: 10px 12px; border-radius: 10px; border-left: 3px solid #10B981;">
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">CUPO DISPONIBLE</span>
+          <div style="font-size: 1.05rem; font-weight: 800; color: #10B981; margin-top: 2px;">${formatCurrency(totalAvailable)}</div>
+        </div>
+      </div>
+
+      <!-- Mini-tarjetas activas -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${activeCredits.slice(0, 2).map(c => {
+          const limit = parseFloat(c.credit_limit) || 1;
+          const used = parseFloat(c.used_amount) || 0;
+          const pct = Math.min(100, Math.round((used / limit) * 100));
+          return `
+            <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 4px;">
+                <span>${c.name}</span>
+                <span style="color: ${pct > 80 ? '#EF4444' : '#10B981'};">${pct}% usado</span>
+              </div>
+              <div style="width: 100%; height: 6px; background: var(--bg-input); border-radius: 9999px; overflow: hidden; margin-bottom: 6px;">
+                <div style="width: ${pct}%; height: 100%; background: ${c.color || '#8B5CF6'}; border-radius: 9999px;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted);">
+                <span>Corte: Día ${c.cutoff_day || 15}</span>
+                <span>Pagar antes: Día ${c.payment_day || 30}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="margin-top: 14px; display: flex; gap: 8px;">
+        <button class="btn-primary-action btn-interactive" onclick="openModal('modal-pay-credit')" style="flex: 1; padding: 6px 10px; font-size: 0.78rem; justify-content: center; background: #10B981;">
+          <i class="fas fa-hand-holding-usd"></i> Abonar
+        </button>
+        <button class="btn-secondary btn-interactive" onclick="openModal('modal-spend-credit')" style="flex: 1; padding: 6px 10px; font-size: 0.78rem; justify-content: center;">
+          <i class="fas fa-shopping-bag"></i> Consumo
+        </button>
       </div>
     `;
   }

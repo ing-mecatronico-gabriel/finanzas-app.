@@ -290,8 +290,13 @@ const TransactionsModule = {
       }
     }
 
-    // Disparar animación de partículas financieras y toast
+    // Disparar sonido, partículas financieras y toast
     const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (window.SoundFX) {
+      if (type === 'ingreso') window.SoundFX.playCash();
+      else if (type === 'transferencia') window.SoundFX.playSuccess();
+      else window.SoundFX.playClick();
+    }
     if (window.MotionSystem) {
       window.MotionSystem.spawnFinancialParticles(submitBtn);
       window.MotionSystem.showToast(

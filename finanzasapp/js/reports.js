@@ -1,25 +1,92 @@
 /**
- * FINANZASAPP — MÓDULO DE REPORTES Y ANALÍTICA FINANCIERA (100% REAL EN $0)
- * Gastos por categoría, comparación real de ingresos vs egresos y tasa de ahorro
+ * FINANZASAPP — MÓDULO DE REPORTES Y ANALÍTICA FINANCIERA
+ * Filtros de período (Diario, Semanal, Quincenal, Mensual, Anual) y exportación a Excel
  */
 
 const ReportsModule = {
+  activePeriod: 'todos',
+  selectedMonth: 'todos',
+
   init() {
+    this.bindEvents();
     this.render();
   },
 
+  bindEvents() {
+    // Filtros de período
+    document.querySelectorAll('.report-filter-pill').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.report-filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.activePeriod = btn.getAttribute('data-period') || 'todos';
+        if (window.SoundFX) window.SoundFX.playClick();
+        this.render();
+      });
+    });
+
+    // Selector de mes
+    const monthSel = document.getElementById('report-month-filter');
+    if (monthSel) {
+      monthSel.addEventListener('change', (e) => {
+        this.selectedMonth = e.target.value;
+        if (window.SoundFX) window.SoundFX.playClick();
+        this.render();
+      });
+    }
+
+    // Botón Descargar Excel
+    const btnExcel = document.getElementById('btn-download-report-excel');
+    if (btnExcel) {
+      btnExcel.addEventListener('click', () => this.downloadExcelReport());
+    }
+  },
+
+  getFilteredTransactions() {
+    let list = AppState.transactions.filter(t => !t.is_deleted);
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Filtro por período
+    if (this.activePeriod === 'diario') {
+      list = list.filter(t => t.date && t.date.substring(0, 10) === todayStr);
+    } else if (this.activePeriod === 'semanal') {
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      list = list.filter(t => t.date && new Date(t.date) >= oneWeekAgo);
+    } else if (this.activePeriod === 'quincenal') {
+      const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+      list = list.filter(t => t.date && new Date(t.date) >= fifteenDaysAgo);
+    } else if (this.activePeriod === 'mensual') {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      list = list.filter(t => t.date && new Date(t.date) >= thirtyDaysAgo);
+    } else if (this.activePeriod === 'anual') {
+      const currentYear = now.getFullYear().toString();
+      list = list.filter(t => t.date && t.date.startsWith(currentYear));
+    }
+
+    // Filtro adicional por mes específico (ej: "04" para Abril)
+    if (this.selectedMonth !== 'todos') {
+      list = list.filter(t => {
+        if (!t.date) return false;
+        const d = new Date(t.date);
+        return !isNaN(d.getTime()) && (d.getMonth() + 1).toString().padStart(2, '0') === this.selectedMonth;
+      });
+    }
+
+    return list;
+  },
+
   render() {
-    this.renderSummaryCards();
-    this.renderCategoryBreakdown();
+    const filteredTx = this.getFilteredTransactions();
+    this.renderSummaryCards(filteredTx);
+    this.renderCategoryBreakdown(filteredTx);
     this.renderMonthlyBars();
   },
 
-  renderSummaryCards() {
+  renderSummaryCards(filteredTx) {
     let income = 0;
     let expense = 0;
 
-    AppState.transactions.forEach(t => {
-      if (t.is_deleted) return;
+    filteredTx.forEach(t => {
       const amt = parseFloat(t.amount) || 0;
       if (t.type === 'ingreso') income += amt;
       if (t.type === 'gasto' || t.type === 'egreso') expense += amt;
@@ -39,15 +106,15 @@ const ReportsModule = {
     if (repRate) repRate.textContent = `${savingRate}%`;
   },
 
-  renderCategoryBreakdown() {
+  renderCategoryBreakdown(filteredTx) {
     const container = document.getElementById('report-categories-container');
     if (!container) return;
 
     const catTotals = {};
     let totalExpense = 0;
 
-    AppState.transactions.forEach(t => {
-      if (t.is_deleted || (t.type !== 'gasto' && t.type !== 'egreso')) return;
+    filteredTx.forEach(t => {
+      if (t.type !== 'gasto' && t.type !== 'egreso') return;
       const amt = parseFloat(t.amount) || 0;
       const cat = t.category || 'Varios';
       catTotals[cat] = (catTotals[cat] || 0) + amt;
@@ -58,7 +125,7 @@ const ReportsModule = {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
           <i class="fas fa-chart-pie" style="font-size: 2.2rem; margin-bottom: 10px; opacity: 0.4; display: block;"></i>
-          No hay gastos registrados todavía para analizar.
+          No hay gastos registrados en este período.
         </div>
       `;
       return;
@@ -149,6 +216,82 @@ const ReportsModule = {
         <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; background: #EF4444; border-radius: 3px;"></span> Gastos</span>
       </div>
     `;
+  },
+
+  // Generar y descargar reporte financiero en Excel
+  downloadExcelReport() {
+    if (!window.XLSX) return alert('Librería Excel no cargada aún');
+
+    const filteredTx = this.getFilteredTransactions();
+    const wb = XLSX.utils.book_new();
+
+    let totalInc = 0;
+    let totalExp = 0;
+    filteredTx.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      if (t.type === 'ingreso') totalInc += amt;
+      if (t.type === 'gasto' || t.type === 'egreso') totalExp += amt;
+    });
+    const net = totalInc - totalExp;
+
+    // Hoja 1: Resumen
+    const summaryData = [
+      { Concepto: 'Período Seleccionado', Valor: this.activePeriod.toUpperCase() },
+      { Concepto: 'Mes Específico', Valor: this.selectedMonth === 'todos' ? 'TODOS' : `Mes ${this.selectedMonth}` },
+      { Concepto: 'Ingresos Totales', Valor: totalInc },
+      { Concepto: 'Gastos Totales', Valor: totalExp },
+      { Concepto: 'Ahorro Neto', Valor: net },
+      { Concepto: 'Tasa de Ahorro', Valor: totalInc > 0 ? `${Math.round((net / totalInc) * 100)}%` : '0%' },
+      { Concepto: 'Cantidad de Movimientos', Valor: filteredTx.length }
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen_General');
+
+    // Hoja 2: Movimientos Detallados
+    const movementsData = filteredTx.map(t => {
+      const acc = AppState.accounts.find(a => a.id === t.account_id);
+      return {
+        Fecha: t.date || 'Hoy',
+        Tipo: t.type.toUpperCase(),
+        Categoria: t.category || 'General',
+        Descripcion: t.description || 'Movimiento',
+        Monto: parseFloat(t.amount) || 0,
+        Cuenta: acc ? acc.name : 'Cuenta'
+      };
+    });
+    const wsMovements = XLSX.utils.json_to_sheet(movementsData.length > 0 ? movementsData : [{ Aviso: 'Sin movimientos en el período' }]);
+    XLSX.utils.book_append_sheet(wb, wsMovements, 'Movimientos_Detalle');
+
+    // Hoja 3: Cuentas y Saldos Actuales
+    const accountsData = AppState.accounts.filter(a => !a.is_deleted).map(a => ({
+      Cuenta: a.name,
+      Tipo: a.type,
+      Saldo_Actual: parseFloat(a.balance) || 0
+    }));
+    const wsAccounts = XLSX.utils.json_to_sheet(accountsData);
+    XLSX.utils.book_append_sheet(wb, wsAccounts, 'Estado_Cuentas');
+
+    // Hoja 4: Créditos y Deudas
+    const creditsData = (AppState.credits || []).filter(c => !c.is_deleted).map(c => ({
+      Credito_Tarjeta: c.name,
+      Cupo_Total: parseFloat(c.credit_limit) || 0,
+      Deuda_Utilizada: parseFloat(c.used_amount) || 0,
+      Disponible: Math.max(0, (c.credit_limit || 0) - (c.used_amount || 0)),
+      Dia_Corte: c.cutoff_day,
+      Dia_Pago: c.payment_day
+    }));
+    if (creditsData.length > 0) {
+      const wsCredits = XLSX.utils.json_to_sheet(creditsData);
+      XLSX.utils.book_append_sheet(wb, wsCredits, 'Tarjetas_Creditos');
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Reporte_Financiero_${this.activePeriod}_${todayStr}.xlsx`);
+
+    if (window.SoundFX) window.SoundFX.playSuccess();
+    if (window.MotionSystem) {
+      window.MotionSystem.showToast('Reporte Generado', `Se descargó Reporte_Financiero_${this.activePeriod}_${todayStr}.xlsx`);
+    }
   }
 };
 
